@@ -8,8 +8,10 @@
 ![Backend](https://img.shields.io/badge/backend-aiohttp-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> **截图待补充** — 打开 `webui/static/index.html` 即见实际界面（暗色主题）。欢迎 PR 添加截图。
-> Screenshots welcome — run the app and the UI speaks for itself (dark slate/indigo theme).
+![WebUI 主界面](docs/screenshots/ui-screenshot.png)
+
+> 暗色主题三视图一体界面（对话流 / 总览 / Studio，顶部切换）。
+> The merged 3-view dark UI (Chat / Overview / Studio).
 
 ---
 
@@ -82,7 +84,7 @@
 | 文本编码器 | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `models/clip/` |
 | Turbo LoRA（可选） | `minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors`（4 步）<br>`minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors`（8 步） | `models/loras/` |
 
-模型与节点安装详见 MiniMax-H3 官方仓库：**[MiniMax-AI/H3](https://github.com/MiniMax-AI/H3)**（请遵守其模型许可）。
+模型与节点安装详见 MiniMax-H3 官方仓库：**[MiniMax-AI/MiniMax-H3](https://github.com/MiniMax-AI/MiniMax-H3)**（请遵守其模型许可）。
 
 ---
 
@@ -200,7 +202,7 @@ Studio 或总览卡片上的 **♻️ 复用** 一键把参数 + 参考图带回
 
 ## 🙏 致谢与许可 / Credits & License
 
-- 模型、节点与官方工作流：**[MiniMax-AI/H3](https://github.com/MiniMax-AI/H3)**（请遵守其模型许可条款）
+- 模型、节点与官方工作流：**[MiniMax-AI/MiniMax-H3](https://github.com/MiniMax-AI/MiniMax-H3)**（请遵守其模型许可条款）
 - 本仓库代码（后端 + 前端）：MIT License，见 [LICENSE](LICENSE)
 
 > ⚠️ 本仓库仅包含 **WebUI 层代码**，不含模型权重。模型需自行按官方指引下载。
