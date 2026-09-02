@@ -29,6 +29,7 @@
 | 🔧 **Turbo LoRA 自动匹配** | 按步数自动选 4-step / 8-step turbo LoRA，也可指定自定义 LoRA 文件 |
 | 🔊 **原生音频** | 直接输出带声音的视频（H3 原生 audio），浏览器内可拖动进度条（Range 流式播放） |
 | 🚀 **历史懒加载** | Studio 左侧历史列表分批渲染（40 条/批）+ 缩略图 IntersectionObserver 懒加载，几百条历史也流畅 |
+| 🎯 **Ref2VA 多素材参考** | 任务类型可切换 `i2v 单图 / r2v 多素材`：r2v 支持 **1–9 张参考图**、按 `<Picture N>` 位置引用，内置官方**六段式提示词指南**（一键插入骨架）；走核心节点链（SigmaShift 12/3 + res_multistep/simple + SaveVideo），可复用 Turbo LoRA |
 | 💾 **数据零依赖** | 前端纯原生 JS（无框架、无构建），后端仅依赖 aiohttp / Pillow / PyAV（ComfyUI 自带） |
 
 ---
@@ -83,6 +84,7 @@
 | 音频 VAE | `minimax_h3_audio_vae_fp32.safetensors` | `models/vae/` |
 | 文本编码器 | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` | `models/clip/` |
 | Turbo LoRA（可选） | `minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors`（4 步）<br>`minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors`（8 步） | `models/loras/` |
+| **Ref2VA 主模型**（r2v 多素材，可选） | `minimax_h3_ref2va_pruned_int8_convrot.safetensors`（或 fp8_scaled 等变体；服务器启动时自动发现 `models/diffusion_models/` 下任意 `minimax_h3_ref2va*.safetensors`） | `models/diffusion_models/` |
 
 模型与节点安装详见 MiniMax-H3 官方仓库：**[MiniMax-AI/MiniMax-H3](https://github.com/MiniMax-AI/MiniMax-H3)**（请遵守其模型许可）。
 
@@ -151,14 +153,16 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 | DELETE | `/api/workspaces/{name}` | 删除工作区 |
 | GET | `/api/workspaces/{name}/generations` | 历史列表（新→旧） |
 | DELETE | `/api/workspaces/{name}/generations/{gid}` | 删除一条记录及其媒体 |
-| POST | `/api/workspaces/{name}/upload-image` | 上传参考图（base64 data-url）→ 返回文件名 |
+| POST | `/api/workspaces/{name}/upload-image` | 上传参考图（base64 data-url）→ 返回文件名（i2v） |
+| POST | `/api/workspaces/{name}/upload-media` | multipart 上传参考素材 `{type: image\|audio\|video, file}` → 返回 `{filename, kind, duration_s, width, height}`（r2v；图片 PIL 校验，音视频 PyAV 校验） |
+| POST | `/api/workspaces/{name}/probe-media` | PyAV 探测已上传媒体 `{filename}` → `{kind, duration_s, width, height, ok}` |
 | POST | `/api/workspaces/{name}/preview-resolution` | 预览后端实际分辨率 `{image, res_mode, custom_w, custom_h, native_scale}` |
 | POST | `/api/workspaces/{name}/extract-frame` | 截帧 `{video, position: "first"\|"last"\|0~1}` → 返回 PNG 文件名（续写用） |
-| POST | `/api/workspaces/{name}/generate` | 提交生成 `{prompt, params, image}` → `{job_id, gen_id, width, height, length}` |
+| POST | `/api/workspaces/{name}/generate` | 提交生成 `{prompt, params, image}`（i2v）或 `{prompt, params, refs:{images:[...]}}`（r2v）→ `{job_id, gen_id, width, height, length}` |
 | GET | `/api/jobs/{job_id}/events` | SSE 进度流：`progress`（value/max/node）/ `status` / `done`（video/audio/duration）/ `error` |
 | POST | `/api/interrupt` | 中断任务 `{job_id}` |
 | GET | `/api/workspaces/{name}/media/{file}` | 流式媒体（支持 Range） |
-| GET | `/api/comfyui/status` | ComfyUI 状态 + 预设信息（durations / res_presets / max_pixels） |
+| GET | `/api/comfyui/status` | ComfyUI 状态 + 预设信息（durations / res_presets / max_pixels / ref2va_model / ref2va_present） |
 
 ---
 
@@ -174,7 +178,8 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 │   └── workspaces/          # 运行期生成，不入库（.gitignore）
 │       └── <工作区>/generations.json + media/
 └── scripts/
-    └── h3_i2v_smoke.py      # 冒烟测试：直连 ComfyUI API 验证端到端链路（可选）
+    ├── h3_i2v_smoke.py      # 冒烟测试：i2v（直连 ComfyUI API 验证端到端链路，可选）
+    └── h3_r2v_smoke.py      # 冒烟测试：r2v 多图参考核心链（--input-dir 可自动生成测试图）
 ```
 
 > 前端无任何构建步骤 —— `index.html` 即全部，改完刷新即生效。

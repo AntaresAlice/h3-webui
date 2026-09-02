@@ -4,9 +4,9 @@ MiniMax-H3 视频生成 WebUI 后端 (aiohttp)
 - 工作区管理: 每个工作区一个目录, generations.json + media/ (输入图 + 输出视频)
 - 视频按 Range 流式播放 (支持拖动进度条)
 运行: 使用 ComfyUI 自带的 python (含 aiohttp/requests/PIL), 例如:
-  <ComfyUI根目录>\python_embeded\python.exe server.py
+  <ComfyUI根目录>/python_embeded/python.exe server.py
 """
-import os, sys, json, time, uuid, base64, shutil, asyncio, mimetypes, io, math, random
+import os, sys, json, time, uuid, base64, shutil, asyncio, mimetypes, io, math, random, re
 from pathlib import Path
 
 from aiohttp import web, ClientSession, WSMsgType
@@ -33,6 +33,46 @@ COMFYUI_OUTPUT = Path(os.environ.get("COMFYUI_OUTPUT", str(_COMFY_OUT)))
 PORT = int(os.environ.get("H3WEBUI_PORT", "8080"))
 HOST = os.environ.get("H3WEBUI_HOST", "127.0.0.1")
 
+
+def _comfy_models_dirs() -> list:
+    """ComfyUI 权重目录候选 (diffusion_models / unet), 用于探测模型文件是否存在。"""
+    out = []
+    seen = set()
+    for base in (COMFYUI_INPUT.parent, COMFYUI_OUTPUT.parent):
+        m = base / "models"
+        for sub in ("diffusion_models", "unet"):
+            d = m / sub
+            if d.is_dir() and str(d) not in seen:
+                seen.add(str(d))
+                out.append(d)
+    return out
+
+
+def find_ref2va_model() -> str:
+    """在 ComfyUI models 目录动态发现 ref2va 权重 (兼容 int8_convrot / fp8_scaled 命名).
+    未找到返回 MODELS['ref2va'] 占位名; 前端可据此提示用户下载权重。"""
+    for d in _comfy_models_dirs():
+        try:
+            hits = sorted(p.name for p in d.glob("minimax_h3_ref2va*.safetensors"))
+        except OSError:
+            continue
+        if hits:
+            return hits[0]
+    return MODELS["ref2va"]
+
+
+def model_file_present(fname: str) -> bool:
+    """某权重文件名是否已存在于 ComfyUI models 目录。"""
+    if not fname:
+        return False
+    for d in _comfy_models_dirs():
+        try:
+            if (d / fname).is_file():
+                return True
+        except OSError:
+            continue
+    return False
+
 BASE = Path(__file__).parent
 STATIC_DIR = BASE / "static"
 WORKSPACES_DIR = BASE / "workspaces"
@@ -44,7 +84,18 @@ CLIENT_ID = "h3webui-" + uuid.uuid4().hex[:12]
 MODELS = {
     "pruned": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
     "full":   "minimax_h3_fl2va_int8_convrot.safetensors",
+    # ref2va: 文件名是占位默认值, 实际以 models/diffusion_models 下的真实文件为准 (见 find_ref2va_model)
+    "ref2va": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
 }
+
+# Ref2VA (r2v) 限制 (官方规格, 见调研报告第十六章)
+R2V_MAX_IMAGES = 9        # 参考图 1..9
+R2V_MAX_AUDIOS = 3        # 参考音频 <=3 段 (P2)
+R2V_MAX_VIDEOS = 3        # 参考视频 <=3 段 (P3)
+R2V_AUDIO_MIN_S = 2.0     # 单段音频最短 2s
+R2V_AUDIO_MAX_S = 15.0    # 单段音频最长 15s
+R2V_AUDIO_TOTAL_MAX_S = 15.0  # 音频总时长 <=15s
+R2V_DEFAULT_W, R2V_DEFAULT_H = 864, 480  # r2v 无 native 语义时的默认画布
 # H3 约束 (来自 custom_nodes core.py): 画布必须 32 倍数, 面积上限 1920*1088
 CANVAS_MULT = 32
 MAX_PIXELS = 1920 * 1088
@@ -236,6 +287,72 @@ def build_graph(prompt: str, params: dict, image_name: str, width: int, height: 
     return g
 
 
+# ==================== Ref2VA (r2v) 核心节点链 ====================
+def build_ref2va_graph(prompt: str, params: dict, ref_images: list, width: int, height: int, length: int) -> dict:
+    """Ref2VA 多素材参考图构建 (核心节点链, T8 无多参考输入故不走 T8)。
+
+    链: UNETLoader -> [ChunkFeedForward/LowVRAMAttention] -> [Sage] -> [Turbo LoRA]
+        -> MiniMaxH3SigmaShift(12/3) -> BasicScheduler/BasicGuider
+    参考图: LoadImage xN -> MiniMaxH3ReferenceToVideo.ref_images.ref_image_0..N
+    出片: SamplerCustomAdvanced -> VAEDecode/VAEDecodeAudio -> CreateVideo -> SaveVideo
+    注: onigirikiller/SekiyoKana 生产链已证实核心 SaveVideo 的输出同样出现在
+        /history 的 images 数组 (.mp4), 与现有 finish_job 扫描兼容。
+    """
+    unet_name = find_ref2va_model()
+    steps = int(params.get("steps", 20))
+    seed = int(params.get("seed", 0))
+    prefix = f"H3_R2V_{steps}step_{width}x{height}_{length}f{'_turbo' if params.get('turbo_lora') else ''}{'_sage' if params.get('sage') else ''}{'_lo' if params.get('low_vram', True) else ''}"
+
+    g = {
+        "1":  {"class_type": "VAELoader",  "inputs": {"vae_name": "minimax_h3_video_vae_fp16.safetensors"}},
+        "2":  {"class_type": "VAELoader",  "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"}},
+        "3":  {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "type": "minimax", "device": "default"}},
+        "4":  {"class_type": "UNETLoader", "inputs": {"unet_name": unet_name, "weight_dtype": "default"}},
+        # 参考图 LoadImage 挂到 node6.ref_images.ref_image_{i} (i=0..N-1), 从 id 20 起
+    }
+    model_src = "4"
+    if params.get("low_vram", True):
+        g["4a"] = {"class_type": "MiniMaxChunkFeedForward", "inputs": {"model": [model_src, 0], "chunks": 2, "seq_threshold": 4096}}
+        model_src = "4a"
+        g["4b"] = {"class_type": "MiniMaxLowVRAMAttention", "inputs": {"model": [model_src, 0], "head_chunks": 4}}
+        model_src = "4b"
+    if params.get("sage"):
+        g["4c"] = {"class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch", "inputs": {"model": [model_src, 0]}}
+        model_src = "4c"
+    if params.get("turbo_lora"):
+        lora_name = params.get("lora_name") or DEFAULT_LORA
+        g["5"] = {"class_type": "LoraLoaderModelOnly", "inputs": {"lora_name": lora_name, "strength_model": 1.0, "model": [model_src, 0]}}
+        model_src = "5"
+    # SigmaShift: 核心链的 shift 载体 (T8 链由 DualClockSamplerT8 内置 shift 12/3)
+    g["5s"] = {"class_type": "MiniMaxH3SigmaShift", "inputs": {"model": [model_src, 0], "shift_video": 12.0, "shift_audio": 3.0}}
+
+    node6 = {
+        "clip": ["3", 0], "vae": ["1", 0], "audio_vae": ["2", 0],
+        "prompt": prompt, "width": width, "height": height, "length": length,
+        "ref_image_size": "match",   # 节点内部处理多参考图缩放, 不做后端 cover
+    }
+    nid = 20
+    for i, fname in enumerate(ref_images[:R2V_MAX_IMAGES]):
+        g[str(nid)] = {"class_type": "LoadImage", "inputs": {"image": fname}}
+        node6[f"ref_images.ref_image_{i}"] = [str(nid), 0]
+        nid += 1
+
+    g["6"] =  {"class_type": "MiniMaxH3ReferenceToVideo", "inputs": node6}
+    g["7"] =  {"class_type": "RandomNoise",            "inputs": {"noise_seed": seed}}
+    g["8"] =  {"class_type": "KSamplerSelect",         "inputs": {"sampler_name": "res_multistep"}}
+    g["9"] =  {"class_type": "BasicScheduler",         "inputs": {"model": ["5s", 0], "scheduler": "simple", "steps": steps, "denoise": 1.0}}
+    g["10"] = {"class_type": "BasicGuider",            "inputs": {"model": ["5s", 0], "conditioning": ["6", 0]}}
+    g["11"] = {"class_type": "SamplerCustomAdvanced",  "inputs": {
+        "noise": ["7", 0], "guider": ["10", 0], "sampler": ["8", 0],
+        "sigmas": ["9", 0], "latent_image": ["6", 1]}}
+    g["12"] = {"class_type": "VAEDecode",       "inputs": {"samples": ["11", 0], "vae": ["1", 0]}}
+    g["13"] = {"class_type": "VAEDecodeAudio",  "inputs": {"samples": ["11", 0], "vae": ["2", 0]}}
+    g["14"] = {"class_type": "CreateVideo",     "inputs": {"images": ["12", 0], "audio": ["13", 0], "fps": 24.0, "bit_depth": 8}}
+    g["15"] = {"class_type": "SaveVideo",       "inputs": {
+        "video": ["14", 0], "filename_prefix": prefix, "format": "auto", "codec": "auto"}}
+    return g
+
+
 # ==================== ComfyUI WebSocket 监听 ====================
 async def comfy_ws_loop(app):
     session: ClientSession = app["session"]
@@ -302,13 +419,26 @@ async def finish_job(job: dict):
             await asyncio.sleep(1)
         outputs = (hist.get(pid) or {}).get("outputs", {})
         video, audio = None, None
+
+        def _iter_files(out: dict, *keys):
+            """history 输出里按多个候选字段名取文件条目 (兼容 list / dict 形态)。"""
+            for k in keys:
+                v = out.get(k)
+                if isinstance(v, list):
+                    for it in v:
+                        if isinstance(it, dict) and it.get("filename"):
+                            yield it
+                elif isinstance(v, dict) and v.get("filename"):
+                    yield v
+
         for nid, out in outputs.items():
-            for img in (out.get("images") or out.get("gifs") or []):
+            # 核心 SaveVideo / VHS 都把成片放在 images/gifs/video 字段 (已验证: SaveVideo -> images)
+            for img in _iter_files(out, "images", "gifs", "video"):
                 fn = img.get("filename")
                 if fn and fn.lower().endswith((".mp4", ".webm", ".gif", ".mov")):
                     if not video:
                         video = (fn, img.get("subfolder", ""), img.get("type", "output"))
-            for au in (out.get("audio") or []):
+            for au in _iter_files(out, "audio", "audios"):
                 fn = au.get("filename")
                 if fn and not audio:
                     audio = (fn, au.get("subfolder", ""), au.get("type", "output"))
@@ -335,6 +465,7 @@ async def finish_job(job: dict):
             "id": job["gen_id"], "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "prompt": job["prompt"], "params": job["params"], "image": job["image"],
             "video": vdest, "audio": adest, "duration": dur, "seed": job["params"].get("seed"),
+            "refs": job.get("refs"), "task_type": job.get("task_type") or job["params"].get("task_type") or "i2v",
         }
         gens.insert(0, rec)
         save_gens(ws_name, gens)
@@ -396,13 +527,21 @@ async def delete_generation(request):
     wd = ws_dir(name)
     for g in gens:
         if g.get("id") == gid:
-            for k in ("video", "audio", "image"):
+            # 只删产出文件 (video/audio); image 若为 i2v 私有预处理产物 (proc_/frame_/tmp)
+            # 也删, 但上传素材 (ws_/au_/vd_...) 永不因删除记录而删 — 可能被多条记录复用
+            for k in ("video", "audio"):
                 fn = g.get(k)
                 if fn and "/" not in fn and "\\" not in fn:
                     p = wd / "media" / fn
                     if p.exists():
                         try: p.unlink()
                         except Exception: pass
+            img = g.get("image")
+            if img and (img.startswith("proc_") or img.startswith("frame_")):
+                p = wd / "media" / img
+                if p.exists():
+                    try: p.unlink()
+                    except Exception: pass
     gens = [g for g in gens if g.get("id") != gid]
     save_gens(name, gens)
     return web.json_response({"ok": True})
@@ -434,6 +573,132 @@ async def upload_image(request):
     except Exception as e:
         print("[upload] copy to ComfyUI/input failed:", e, flush=True)
     return web.json_response({"filename": fname})
+
+
+# ---- 参考素材 (r2v 多图/音频/视频): multipart 上传 + PyAV 探测 ----
+_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
+_AUDIO_EXTS = {".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".opus"}
+_VIDEO_EXTS = {".mp4", ".webm", ".mov", ".mkv", ".avi"}
+
+
+def _probe_media(p: Path) -> dict:
+    """PyAV 探测媒体文件: 返回 {ok, kind, duration_s, width, height, has_video, has_audio, error}"""
+    try:
+        import av
+        container = av.open(str(p))
+        out = {"ok": True, "kind": None, "duration_s": None,
+               "width": None, "height": None,
+               "has_video": bool(container.streams.video),
+               "has_audio": bool(container.streams.audio), "error": None}
+        # duration: 视频/音频流各自时长 (优先取存在的流)
+        for s in (container.streams.video or container.streams.audio or []):
+            if s.duration:
+                out["duration_s"] = round(float(s.duration * s.time_base), 2)
+                break
+        vs = container.streams.video
+        if vs:
+            st = vs[0]
+            out["width"], out["height"] = st.codec_context.width, st.codec_context.height
+        container.close()
+        if out["has_video"]:
+            out["kind"] = "video"
+        elif out["has_audio"]:
+            out["kind"] = "audio"
+        else:
+            out["ok"] = False
+            out["error"] = "未识别到任何音视频流"
+        return out
+    except ImportError:
+        return {"ok": False, "error": "服务器缺少 PyAV (av) 库", "kind": None}
+    except Exception as e:
+        return {"ok": False, "error": f"媒体解码失败: {e}", "kind": None}
+
+
+async def upload_media(request):
+    """r2v 参考素材上传 (multipart: type + file)。图片 PIL 校验; 音视频 PyAV 校验并返回时长/尺寸。
+    存工作区 + 拷 ComfyUI/input。"""
+    name = safe_name(request.match_info["name"])
+    reader = await request.multipart()
+    kind, fname_orig, data = None, "", b""
+    async for part in reader:
+        if part.name == "type":
+            kind = (await part.read()).decode("utf-8", "replace").strip().lower()
+        elif part.name == "file":
+            fname_orig = part.filename or ""
+            data = await part.read()
+    if not data:
+        raise web.HTTPBadRequest(text="未收到文件内容")
+    ext = Path(fname_orig).suffix.lower() or ""
+    # kind 缺省时按扩展名推断
+    if not kind:
+        if ext in _IMAGE_EXTS: kind = "image"
+        elif ext in _AUDIO_EXTS: kind = "audio"
+        elif ext in _VIDEO_EXTS: kind = "video"
+    wd = ws_dir(name)
+
+    if kind == "image":
+        if ext not in _IMAGE_EXTS:
+            raise web.HTTPBadRequest(text=f"不支持的图片格式: {ext or '未知'} (支持 png/jpg/jpeg/webp/bmp)")
+        try:
+            img = Image.open(io.BytesIO(data))
+            img.load()
+        except Exception as e:
+            raise web.HTTPBadRequest(text=f"图片无法解码: {e}")
+        # 统一重编码为 PNG (保持像素/不缩放): LoadImage 兼容性最好, 顺带剥离 EXIF
+        buf = io.BytesIO()
+        img.convert("RGB").save(buf, format="PNG")
+        data = buf.getvalue()
+        ext = ".png"
+        fname = f"ws_{uuid.uuid4().hex[:10]}{ext}"
+        resp = {"filename": fname, "kind": "image", "width": img.width, "height": img.height, "duration_s": None}
+    elif kind in ("audio", "video"):
+        if kind == "audio" and ext not in _AUDIO_EXTS:
+            raise web.HTTPBadRequest(text=f"不支持的音频格式: {ext or '未知'} (支持 mp3/wav/flac/m4a/aac/ogg/opus)")
+        if kind == "video" and ext not in _VIDEO_EXTS:
+            raise web.HTTPBadRequest(text=f"不支持的视频格式: {ext or '未知'} (支持 mp4/webm/mov/mkv/avi)")
+        prefix = "au_" if kind == "audio" else "vd_"
+        fname = f"{prefix}{uuid.uuid4().hex[:10]}{ext or ('.mp3' if kind == 'audio' else '.mp4')}"
+        resp = {"filename": fname, "kind": kind}
+    else:
+        raise web.HTTPBadRequest(text="type 必须是 image / audio / video")
+
+    (wd / "media" / fname).write_bytes(data)
+    try:
+        shutil.copy2(wd / "media" / fname, COMFYUI_INPUT / fname)
+    except Exception as e:
+        print("[upload_media] copy to ComfyUI/input failed:", e, flush=True)
+
+    if kind in ("audio", "video"):
+        info = _probe_media(wd / "media" / fname)
+        if not info["ok"]:
+            (wd / "media" / fname).unlink(missing_ok=True)
+            raise web.HTTPBadRequest(text=info["error"])
+        if info["kind"] != kind:
+            # 名不符实: 例如标 audio 实际是视频
+            (wd / "media" / fname).unlink(missing_ok=True)
+            raise web.HTTPBadRequest(text=f"文件实际是 {info['kind']}, 与上传类型 {kind} 不符")
+        if kind == "audio" and info["duration_s"] is not None:
+            if info["duration_s"] < R2V_AUDIO_MIN_S or info["duration_s"] > R2V_AUDIO_MAX_S:
+                (wd / "media" / fname).unlink(missing_ok=True)
+                raise web.HTTPBadRequest(
+                    text=f"参考音频需 {R2V_AUDIO_MIN_S:.0f}–{R2V_AUDIO_MAX_S:.0f}s (当前 {info['duration_s']}s)")
+        resp.update({"duration_s": info["duration_s"], "width": info["width"], "height": info["height"]})
+    return web.json_response(resp)
+
+
+async def probe_media(request):
+    """对工作区已上传的媒体返回探测信息 (供前端展示/校验)。"""
+    name = safe_name(request.match_info["name"])
+    data = await request.json()
+    fname = data.get("filename")
+    if not fname or "/" in fname or "\\" in fname:
+        raise web.HTTPBadRequest(text="缺少 filename")
+    p = ws_dir(name) / "media" / fname
+    if not p.exists():
+        raise web.HTTPNotFound(text="文件不存在")
+    info = _probe_media(p)
+    info["filename"] = fname
+    return web.json_response(info)
 
 
 async def preview_resolution(request):
@@ -502,18 +767,23 @@ async def extract_frame(request):
 
 
 async def generate(request):
+    """提交生成任务。params.task_type 决定走哪条链:
+      - i2v (默认): T8 自定义节点链, 单图预处理, build_graph()
+      - r2v: 核心节点链 (多图参考), build_ref2va_graph()"""
     name = safe_name(request.match_info["name"])
     data = await request.json()
     prompt = (data.get("prompt") or "").strip()
     params = data.get("params") or {}
-    raw_image = data.get("image")  # 已上传的原始图文件名
+    raw_image = data.get("image")  # i2v 参考图 (r2v 用 refs.images, 不走此字段)
+    task_type = str(params.get("task_type") or data.get("task_type") or "i2v").lower()
+    if task_type not in ("i2v", "r2v"):
+        task_type = "i2v"
     if not prompt:
         raise web.HTTPBadRequest(text="请填写提示词")
-    if not raw_image:
-        raise web.HTTPBadRequest(text="请上传参考图")
-    params.setdefault("model", "pruned")
-    params.setdefault("steps", 4)
-    params.setdefault("res_mode", "native")
+    params["task_type"] = task_type
+    params.setdefault("model", "pruned" if task_type != "r2v" else "ref2va")
+    params.setdefault("steps", 4 if task_type != "r2v" else 20)
+    params.setdefault("res_mode", "custom" if task_type == "r2v" else "native")
     params.setdefault("duration", 5)
     params.setdefault("seed", -1)
     params.setdefault("low_vram", True)
@@ -527,6 +797,13 @@ async def generate(request):
         ln = (params.get("lora_name") or "").strip()
         known = set(TURBO_LORAS.values()) | {DEFAULT_LORA, "minimax_h3_turbo_4STEPS_comfyui.safetensors"}
         params["lora_name"] = ln if (ln and ln not in known) else TURBO_LORAS.get(int(params.get("steps", 8)), DEFAULT_LORA)
+
+    if task_type == "r2v":
+        return await _generate_r2v(request, name, data, prompt, params)
+
+    # ==================== i2v (T8 链, 原逻辑) ====================
+    if not raw_image:
+        raise web.HTTPBadRequest(text="请上传参考图")
     # 图像预处理: 按分辨率模式裁剪/缩放到 32 倍数 (节点会把图拉伸到 w×h, 故先处理好)
     raw_path = ws_dir(name) / "media" / raw_image
     if not raw_path.exists():
@@ -544,7 +821,55 @@ async def generate(request):
         print("[generate] copy proc to ComfyUI/input failed:", e, flush=True)
     params["width"], params["height"], params["length"] = tw, th, frames
     g = build_graph(prompt, params, proc_name, tw, th, frames)
-    session: ClientSession = request.app["session"]
+    return await _launch_job(name, request.app["session"], params, prompt, g,
+                             proc_name, None, task_type, tw, th, frames)
+
+
+def _validate_ref_fname(fn):
+    """参考素材文件名安全校验 + 须存在于工作区。"""
+    if not fn or not isinstance(fn, str):
+        return False
+    if "/" in fn or "\\" in fn or fn.startswith("..") or fn.strip() != fn:
+        return False
+    return True
+
+
+async def _generate_r2v(request, name, data, prompt, params):
+    """r2v: 多图参考 (核心节点链)。图不预处理, 原图 + ref_image_size=match 交给节点。"""
+    wd = ws_dir(name)
+    refs = data.get("refs") or {}
+    ref_images = [f for f in (refs.get("images") or []) if _validate_ref_fname(f)]
+    if not 1 <= len(ref_images) <= R2V_MAX_IMAGES:
+        raise web.HTTPBadRequest(text=f"r2v 需要 1–{R2V_MAX_IMAGES} 张参考图 (收到 {len(ref_images)})")
+    missing = [f for f in ref_images if not (wd / "media" / f).exists()]
+    if missing:
+        raise web.HTTPBadRequest(text=f"参考图不存在, 请重新上传: {', '.join(missing[:3])}")
+    # <Picture N> 引用编号不得超过实际图片数 (官方位置引用语义)
+    pic_nums = [int(m) for m in re.findall(r"<Picture\s+(\d+)\s*>", prompt)]
+    if pic_nums and max(pic_nums) > len(ref_images):
+        raise web.HTTPBadRequest(
+            text=f"提示词引用了 <Picture {max(pic_nums)}>, 但只上传了 {len(ref_images)} 张参考图")
+    # r2v 无 native 语义: 固定 custom 画布 (默认 864×480), 不做 cover 预处理
+    cw = snap32(int(params.get("custom_w") or R2V_DEFAULT_W))
+    ch = snap32(int(params.get("custom_h") or R2V_DEFAULT_H))
+    if cw * ch > MAX_PIXELS:
+        cw, ch = compute_native_target(cw, ch)
+    params["res_mode"] = "custom"
+    frames = duration_to_frames(int(params.get("duration", 5)))
+    params["width"], params["height"], params["length"] = cw, ch, frames
+    # r2v 权重缺失提示 (文件不存在时 ComfyUI 会拒绝, 提前告知)
+    r2v_name = find_ref2va_model()
+    if not model_file_present(r2v_name):
+        print(f"[r2v] 警告: ref2va 权重未找到 ({r2v_name}), 提交将被 ComfyUI 拒绝", flush=True)
+    g = build_ref2va_graph(prompt, params, ref_images, cw, ch, frames)
+    refs_full = {"images": ref_images,
+                 "audios": [f for f in (refs.get("audios") or []) if _validate_ref_fname(f)],
+                 "videos": [f for f in (refs.get("videos") or []) if _validate_ref_fname(f)]}
+    return await _launch_job(name, request.app["session"], params, prompt, g,
+                             ref_images[0], refs_full, "r2v", cw, ch, frames)
+
+
+async def _launch_job(name, session, params, prompt, g, image_field, refs, task_type, tw, th, frames):
     try:
         async with session.post(f"{COMFYUI_URL}/prompt",
                                 json={"prompt": g, "client_id": CLIENT_ID}, timeout=30) as r:
@@ -569,7 +894,8 @@ async def generate(request):
     JOBS[pid] = {
         "queue": asyncio.Queue(), "session": session, "pid": pid,
         "ws": name, "gen_id": gen_id, "params": dict(params), "prompt": prompt,
-        "image": proc_name, "status": "running", "video": None, "audio": None,
+        "image": image_field, "refs": refs, "task_type": task_type,
+        "status": "running", "video": None, "audio": None,
         "error": None, "t0": time.time(),
     }
     return web.json_response({"job_id": pid, "gen_id": gen_id, "width": tw, "height": th, "length": frames})
@@ -613,19 +939,25 @@ async def media(request):
 
 async def comfy_status(request):
     session: ClientSession = request.app["session"]
+    r2v_name = find_ref2va_model()
+    base = {
+        "comfyui_url": COMFYUI_URL,
+        "models": list(MODELS.keys()), "max_pixels": MAX_PIXELS, "durations": DURATIONS, "res_presets": RES_PRESETS,
+        # r2v 权重探测: 名称(发现到的或占位) + 是否已存在于 models 目录
+        "ref2va_model": r2v_name, "ref2va_present": model_file_present(r2v_name),
+    }
     try:
         async with session.get(f"{COMFYUI_URL}/system_stats", timeout=5) as r:
             st = await r.json()
         dev = (st.get("devices") or [{}])[0]
         return web.json_response({
-            "up": True, "comfyui_url": COMFYUI_URL,
+            "up": True,
             "vram_total": dev.get("vram_total"), "vram_free": dev.get("vram_free"),
             "torch": st.get("system", {}).get("torch_version"),
-            "models": list(MODELS.keys()), "max_pixels": MAX_PIXELS, "durations": DURATIONS, "res_presets": RES_PRESETS,
+            **base,
         })
     except Exception as e:
-        return web.json_response({"up": False, "error": str(e), "comfyui_url": COMFYUI_URL,
-                                  "models": list(MODELS.keys()), "max_pixels": MAX_PIXELS, "durations": DURATIONS, "res_presets": RES_PRESETS})
+        return web.json_response({"up": False, "error": str(e), **base})
 
 
 async def interrupt(request):
@@ -684,6 +1016,8 @@ def make_app():
     app.router.add_get(f"{api}/workspaces/{{name}}/generations", get_generations)
     app.router.add_delete(f"{api}/workspaces/{{name}}/generations/{{gid}}", delete_generation)
     app.router.add_post(f"{api}/workspaces/{{name}}/upload-image", upload_image)
+    app.router.add_post(f"{api}/workspaces/{{name}}/upload-media", upload_media)
+    app.router.add_post(f"{api}/workspaces/{{name}}/probe-media", probe_media)
     app.router.add_post(f"{api}/workspaces/{{name}}/preview-resolution", preview_resolution)
     app.router.add_post(f"{api}/workspaces/{{name}}/extract-frame", extract_frame)
     app.router.add_post(f"{api}/workspaces/{{name}}/generate", generate)
