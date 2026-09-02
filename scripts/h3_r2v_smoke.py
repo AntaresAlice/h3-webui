@@ -119,24 +119,17 @@ def main():
         if f:
             imgs.append(f)
     if not imgs:
-        import pathlib, urllib.request
+        import pathlib
         ind = pathlib.Path(args.input_dir) if args.input_dir else None
         if not ind or not ind.is_dir():
             print("需要参考图: 用 --img1/--img2 指定 ComfyUI/input 下的文件, 或 --input-dir 提供目录(自动生成测试图)")
             raise SystemExit(1)
-        # 上传两张生成图 (经 ComfyUI /upload/image)
+        # 直接把生成的测试图写入 ComfyUI/input (本地部署无需走 /upload/image API)
         for k, rgb in (("1", (70, 130, 220)), ("2", (200, 120, 60))):
-            png = make_png(512, 512, rgb)
             fn = f"r2v_smoke_ref{k}.png"
-            bound = b"--" + b"dshboundary" + b"\r\n"
-            body = (bound + f'Content-Disposition: form-data; name="image"; filename="{fn}"\r\nContent-Type: image/png\r\n\r\n'.encode()
-                    + png + b"\r\n" + bound + b"--\r\n")
-            req = urllib.request.Request(f"{API}/upload/image", data=body,
-                                         headers={"Content-Type": "multipart/form-data; boundary=dshboundary"})
-            with urllib.request.urlopen(req, timeout=30) as r:
-                r.read()
+            (ind / fn).write_bytes(make_png(512, 512, rgb))
             imgs.append(fn)
-        print(">> 已生成并上传测试参考图:", imgs)
+        print(">> 已生成测试参考图到", ind, ":", imgs)
 
     g = build_graph(args.unet, args.steps, args.seed, W, H, L, imgs, args.prompt, prefix,
                     low_vram=not args.no_lowvram, turbo=args.turbo)
@@ -161,7 +154,8 @@ def main():
                     for k, v in o.items():
                         if isinstance(v, list):
                             for it in v:
-                                print("  OUT:", it.get("filename"), "(subfolder:", it.get("subfolder"), ")")
+                                if isinstance(it, dict) and it.get("filename"):
+                                    print("  OUT:", it.get("filename"), "(subfolder:", it.get("subfolder"), ")")
                 return
             for tt, mm in st.get("messages", [])[-3:]:
                 if tt != "execution_start": print(f"  [{tt}] {str(mm)[:160]}")
