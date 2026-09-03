@@ -1,8 +1,8 @@
 # 🎬 MiniMax-H3 WebUI — 视频生成工作台
 
 > 一个基于 **ComfyUI + MiniMax-H3** 的自托管视频生成 Web 界面。三视图合一：对话流 / 总览 / Studio，支持工作区、历史管理、真实步数进度、参考图复用与视频续写。
->
-> A self-hosted video-generation web UI built on ComfyUI + MiniMax-H3: a merged 3-view interface (Chat / Overview / Studio) with workspaces, history, real step-level progress, reference reuse and video continuation.
+
+**🌐 语言 / Language：中文 | [English](README.en.md)**
 
 ![UI theme](https://img.shields.io/badge/UI-暗色%20Slate%20Indigo-6366f1)
 ![Backend](https://img.shields.io/badge/backend-aiohttp-blue)
@@ -11,16 +11,14 @@
 ![WebUI 主界面](docs/screenshots/ui-screenshot.png)
 
 > 暗色主题三视图一体界面（对话流 / 总览 / Studio，顶部切换）。
-> The merged 3-view dark UI (Chat / Overview / Studio).
 
 ![r2v 提示词编辑器](docs/screenshots/composer-editor.png)
 
 > r2v 全屏提示词编辑器示例：六段分栏 + 整段逐 token 标红，chat / Studio 均可唤起。
-> The fullscreen r2v prompt editor: six-section split view plus per-token highlight (out-of-range red / skipped-index amber), launchable from Chat or Studio.
 
 ---
 
-## ✨ 功能特性 / Features
+## ✨ 功能特性
 
 | 特性 | 说明 |
 | --- | --- |
@@ -39,7 +37,7 @@
 
 ---
 
-## 🧱 架构 / Architecture
+## 🧱 架构
 
 ```
 ┌─────────────────────────────┐
@@ -71,7 +69,7 @@
 
 ---
 
-## 📋 环境要求 / Requirements
+## 📋 环境要求
 
 | 依赖 | 说明 |
 | --- | --- |
@@ -80,7 +78,7 @@
 | **模型文件** | 见下方模型清单，放入对应 `ComfyUI/models/` 目录 |
 | **Python 库** | 使用 ComfyUI 自带 python（含 aiohttp / Pillow / PyAV / requests），**无需单独装环境** |
 
-### 模型清单 / Models
+### 模型清单
 
 | 用途 | 文件 | 目录 |
 | --- | --- | --- |
@@ -95,7 +93,7 @@
 
 ---
 
-## 🚀 快速开始 / Quick Start（Windows）
+## 🚀 快速开始（Windows）
 
 ### 方式一：一键启动（推荐）
 
@@ -122,7 +120,7 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 
 浏览器打开 **http://127.0.0.1:8080** 即可使用。
 
-### 使用流程 / Usage Flow
+### 使用流程
 
 1. 顶部选择/新建 **工作区**（每个工作区历史独立）。
 2. 上传 **参考图**（拖拽或点击；r2v 多素材时还可追加参考音频）。
@@ -132,7 +130,7 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 
 ---
 
-## ⚙️ 配置 / Configuration
+## ⚙️ 配置
 
 全部通过**环境变量**覆盖，无配置文件：
 
@@ -147,7 +145,7 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 
 ---
 
-## 🔌 API 一览 / REST API
+## 🔌 API 一览
 
 `/api` 前缀，全部 JSON：
 
@@ -171,7 +169,7 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 
 ---
 
-## 📁 项目结构 / Structure
+## 📁 项目结构
 
 ```
 .
@@ -194,7 +192,7 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 
 ---
 
-## ❓ 常见问题 / FAQ
+## ❓ 常见问题
 
 **Q: 需要单独安装 Python 环境吗？**
 不需要。直接复用 ComfyUI 自带 `python_embeded\python.exe`（已含 aiohttp / Pillow / PyAV）。
@@ -213,7 +211,7 @@ Studio 或总览卡片上的 **♻️ 复用** 一键把参数 + 参考图带回
 
 ---
 
-## 🙏 致谢与许可 / Credits & License
+## 🙏 致谢与许可
 
 - 模型、节点与官方工作流：**[MiniMax-AI/MiniMax-H3](https://github.com/MiniMax-AI/MiniMax-H3)**（请遵守其模型许可条款）
 - 本仓库代码（后端 + 前端）：MIT License，见 [LICENSE](LICENSE)

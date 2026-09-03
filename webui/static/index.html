@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MiniMax-H3 视频生成</title>
+<title data-i18n="MiniMax-H3 视频生成">MiniMax-H3 视频生成</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236366f1'/%3E%3Cpath d='M11 9l9 7-9 7z' fill='white'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
@@ -37,6 +37,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .seg button{background:transparent;border:none;color:var(--text-sec);cursor:pointer;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;transition:.15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
 .seg button.active{background:var(--bg-lighter);color:var(--text)}
 .seg button:hover:not(.active){color:var(--text)}
+.lang-seg button{padding:4px 10px;font-size:11px}
+.lang-seg button.active{background:var(--primary);color:#fff}
 .topbar .spacer{flex:1}
 .comfy-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-sec)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim)}
@@ -405,15 +407,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   <div class="topbar">
     <div class="logo"><i class="fas fa-clapperboard"></i> H3 Studio</div>
     <select class="ws-sel" id="wsSel"></select>
-    <button class="icon-btn" id="newWsBtn" title="新建工作区"><i class="fas fa-plus"></i></button>
+    <button class="icon-btn" id="newWsBtn" title="新建工作区" data-i18n-title="新建工作区"><i class="fas fa-plus"></i></button>
     <div class="seg" id="viewSeg">
-      <button data-v="chat"><i class="fas fa-comments"></i> 对话流</button>
-      <button data-v="overview"><i class="fas fa-th-large"></i> 总览</button>
+      <button data-v="chat"><i class="fas fa-comments"></i> <span data-i18n="对话流">对话流</span></button>
+      <button data-v="overview"><i class="fas fa-th-large"></i> <span data-i18n="总览">总览</span></button>
       <button data-v="studio" class="active"><i class="fas fa-film"></i> Studio</button>
     </div>
     <div class="spacer"></div>
-    <div class="comfy-status"><span class="dot" id="comfyDot"></span><span id="comfyTxt">检测中</span></div>
-    <button class="icon-btn" id="refreshBtn" title="刷新"><i class="fas fa-rotate-right"></i></button>
+    <div class="seg lang-seg" id="langSeg">
+      <button data-lang="zh" class="active">中文</button><button data-lang="en">EN</button>
+    </div>
+    <div class="comfy-status"><span class="dot" id="comfyDot"></span><span id="comfyTxt" data-i18n="检测中">检测中</span></div>
+    <button class="icon-btn" id="refreshBtn" title="刷新" data-i18n-title="刷新"><i class="fas fa-rotate-right"></i></button>
   </div>
 
   <!-- VIEW: CHAT -->
@@ -421,21 +426,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     <div class="chat-msgs" id="chatMsgs"></div>
     <div class="chat-input">
       <div class="menu-bar">
-        <div class="menu-chip" id="chipModel"><i class="fas fa-cube"></i><span>剪枝</span></div>
-        <div class="menu-chip" id="chipRes"><i class="fas fa-expand"></i><span>原生</span></div>
-        <div class="menu-chip" id="chipSteps"><i class="fas fa-shoe-prints"></i><span>4 步</span></div>
+        <div class="menu-chip" id="chipModel"><i class="fas fa-cube"></i><span data-i18n="剪枝">剪枝</span></div>
+        <div class="menu-chip" id="chipRes"><i class="fas fa-expand"></i><span data-i18n="原生">原生</span></div>
+        <div class="menu-chip" id="chipSteps"><i class="fas fa-shoe-prints"></i><span data-i18n="4 步">4 步</span></div>
         <div class="menu-chip" id="chipDur"><i class="fas fa-clock"></i><span>5s</span></div>
         <div class="menu-chip" id="chipSage"><i class="fas fa-bolt"></i><span>Sage</span></div>
-        <div class="menu-chip" id="chipParams"><i class="fas fa-sliders"></i><span>更多参数</span></div>
-        <div class="menu-chip" id="chipComposer" style="display:none" title="打开 Ref2VA 提示词大编辑器"><i class="fas fa-pen-to-square"></i><span>提示词编辑</span></div>
+        <div class="menu-chip" id="chipParams"><i class="fas fa-sliders"></i><span data-i18n="更多参数">更多参数</span></div>
+        <div class="menu-chip" id="chipComposer" style="display:none" title="打开 Ref2VA 提示词大编辑器" data-i18n-title="打开 Ref2VA 提示词大编辑器"><i class="fas fa-pen-to-square"></i><span data-i18n="提示词编辑">提示词编辑</span></div>
       </div>
       <div class="input-row">
         <div class="img-upload">
           <input type="file" id="chatImgFile" accept="image/*">
           <label for="chatImgFile" class="img-btn" id="chatImgBtn"><i class="fas fa-image"></i></label>
         </div>
-        <textarea class="prompt-input" id="chatPrompt" placeholder="描述你想要的视频…（Ctrl+Enter 生成）"></textarea>
-        <button class="send-btn" id="chatSend" disabled><i class="fas fa-paper-plane"></i><span>生成</span></button>
+        <textarea class="prompt-input" id="chatPrompt" placeholder="描述你想要的视频…（Ctrl+Enter 生成）" data-i18n-ph="描述你想要的视频…（Ctrl+Enter 生成）"></textarea>
+        <button class="send-btn" id="chatSend" disabled><i class="fas fa-paper-plane"></i><span data-i18n="生成">生成</span></button>
       </div>
     </div>
   </div>
@@ -443,10 +448,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   <!-- VIEW: OVERVIEW -->
   <div class="view view-overview" id="viewOverview">
     <div class="filterbar">
-      <div class="search-wrap"><i class="fas fa-search"></i><input type="text" id="ovSearch" placeholder="搜索提示词…"></div>
-      <select id="ovFilterModel"><option value="">全部模型</option><option value="pruned">pruned</option><option value="full">full</option></select>
-      <select id="ovFilterRes"><option value="">全部分辨率</option></select>
-      <button class="btn" id="ovSort" style="font-size:11px;padding:6px 10px"><i class="fas fa-arrow-down-wide-short"></i> <span id="ovSortLabel">最新</span></button>
+      <div class="search-wrap"><i class="fas fa-search"></i><input type="text" id="ovSearch" placeholder="搜索提示词…" data-i18n-ph="搜索提示词…"></div>
+      <select id="ovFilterModel"><option value="" data-i18n="全部模型">全部模型</option><option value="pruned">pruned</option><option value="full">full</option></select>      <select id="ovFilterRes"><option value="" data-i18n="全部分辨率">全部分辨率</option></select>
+      <button class="btn" id="ovSort" style="font-size:11px;padding:6px 10px"><i class="fas fa-arrow-down-wide-short"></i> <span id="ovSortLabel" data-i18n="最新">最新</span></button>
       <span class="count" id="ovCount"></span>
     </div>
     <div class="ov-scroll"><div class="ov-grid" id="ovGrid"></div></div>
@@ -456,8 +460,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   <div class="view view-studio active" id="viewStudio">
     <div class="st-left">
       <div class="st-left-head">
-        <h3><i class="fas fa-clock-rotate-left"></i> 历史 <span class="st-count" id="stCount">0</span></h3>
-        <div class="st-search"><i class="fas fa-search"></i><input type="text" id="stSearch" placeholder="搜索…"></div>
+        <h3><i class="fas fa-clock-rotate-left"></i> <span data-i18n="历史">历史</span> <span class="st-count" id="stCount">0</span></h3>
+        <div class="st-search"><i class="fas fa-search"></i><input type="text" id="stSearch" placeholder="搜索…" data-i18n-ph="搜索…"></div>
       </div>
       <div class="st-list" id="stList"></div>
     </div>
@@ -465,98 +469,98 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
       <div class="st-stage" id="stStage">
         <div class="st-stage-empty">
           <i class="fas fa-photo-film"></i>
-          <b>准备开始生成</b>
-          <p>右侧上传参考图、填写提示词、调整参数，然后点「生成」。</p>
+          <b data-i18n="准备开始生成">准备开始生成</b>
+          <p data-i18n="右侧上传参考图、填写提示词、调整参数，然后点「生成」。">右侧上传参考图、填写提示词、调整参数，然后点「生成」。</p>
         </div>
       </div>
     </div>
     <div class="st-right">
       <div class="st-panel">
         <div class="st-sec">
-          <div class="st-title"><i class="fas fa-photo-film"></i> 任务类型</div>
+          <div class="st-title"><i class="fas fa-photo-film"></i> <span data-i18n="任务类型">任务类型</span></div>
           <div class="task-seg" id="stTaskSeg">
-            <button data-t="i2v" class="active">i2v 单图</button>
-            <button data-t="r2v">r2v 多素材</button>
+            <button data-t="i2v" class="active"><span data-i18n="i2v 单图">i2v 单图</span></button>
+            <button data-t="r2v"><span data-i18n="r2v 多素材">r2v 多素材</span></button>
           </div>
-          <div style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.5" id="stTaskTip">单参考图 → 视频（T8 链）</div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.5" id="stTaskTip"><span data-i18n="单参考图 → 视频（T8 链）">单参考图 → 视频（T8 链）</span></div>
         </div>
         <div class="st-sec">
-          <div class="st-title"><i class="fas fa-image"></i> 参考素材</div>
+          <div class="st-title"><i class="fas fa-image"></i> <span data-i18n="参考素材">参考素材</span></div>
           <input type="file" id="stImgFile" accept="image/*" style="display:none">
           <div class="img-drop" id="stImgDrop">
-            <i class="fas fa-cloud-arrow-up"></i><span>点击或拖入图片</span>
+            <i class="fas fa-cloud-arrow-up"></i><span data-i18n="点击或拖入图片">点击或拖入图片</span>
           </div>
           <!-- r2v: 多图参考 (1..9) -->
           <input type="file" id="stRefFiles" accept="image/*" multiple style="display:none">
           <div class="r2v-grid" id="stRefGrid" style="display:none"></div>
-          <div class="r2v-tip" id="stRefTip" style="display:none">图按顺序编号，提示词用 <b>&lt;Picture N&gt;</b> 引用（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;）。可选加 <b>&lt;=3 段音频</b> 作音色参考，用 <b>&lt;Audio N&gt;</b> 引用（每段 2–15s）</div>
+          <div class="r2v-tip" id="stRefTip" style="display:none"></div>
           <!-- r2v: 音频参考 (P2, <=3 段, 每段 2-15s) -->
           <input type="file" id="stAudFiles" accept="audio/*" multiple style="display:none">
           <div class="r2v-audios" id="stRefAudios" style="display:none"></div>
-          <button class="btn r2v-aud-add" id="stAudAdd" style="display:none"><i class="fas fa-microphone"></i> 添加参考音频（≤3 段, 2–15s）</button>
+          <button class="btn r2v-aud-add" id="stAudAdd" style="display:none"><i class="fas fa-microphone"></i> <span data-i18n="添加参考音频（≤3 段, 2–15s）">添加参考音频（≤3 段, 2–15s）</span></button>
         </div>
         <div class="st-sec">
-          <div class="st-title"><i class="fas fa-keyboard"></i> 提示词</div>
+          <div class="st-title"><i class="fas fa-keyboard"></i> <span data-i18n="提示词">提示词</span></div>
           <div style="display:none;gap:6px;margin-bottom:6px" id="stPromptTools">
-            <button class="btn" style="flex:1;padding:6px;font-size:11px;justify-content:center" onclick="insertSixSkeleton()"><i class="fas fa-wand-magic-sparkles"></i> 六段式骨架</button>
-            <button class="btn" style="flex:1;padding:6px;font-size:11px;justify-content:center" onclick="openComposer()"><i class="fas fa-expand"></i> 全屏编写</button>
+            <button class="btn" style="flex:1;padding:6px;font-size:11px;justify-content:center" onclick="insertSixSkeleton()"><i class="fas fa-wand-magic-sparkles"></i> <span data-i18n="六段式骨架">六段式骨架</span></button>
+            <button class="btn" style="flex:1;padding:6px;font-size:11px;justify-content:center" onclick="openComposer()"><i class="fas fa-expand"></i> <span data-i18n="全屏编写">全屏编写</span></button>
           </div>
-          <textarea class="st-textarea" id="stPrompt" placeholder="描述视频内容…（Ctrl+Enter 生成）"></textarea>
-          <div class="st-prompt-foot"><span>Ctrl+Enter 生成</span><span id="stCharCount">0</span></div>
+          <textarea class="st-textarea" id="stPrompt" placeholder="描述视频内容…（Ctrl+Enter 生成）" data-i18n-ph="描述视频内容…（Ctrl+Enter 生成）"></textarea>
+          <div class="st-prompt-foot"><span data-i18n="Ctrl+Enter 生成">Ctrl+Enter 生成</span><span id="stCharCount">0</span></div>
           <details class="guide-details" id="stGuide" style="display:none">
-            <summary>Ref2VA 提示词指南</summary>
+            <summary data-i18n="Ref2VA 提示词指南">Ref2VA 提示词指南</summary>
             <div class="guide-body" id="stGuideBody"></div>
           </details>
         </div>
         <div class="st-sec">
-          <div class="st-title"><i class="fas fa-sliders"></i> 参数</div>
-          <div class="field"><label>模型</label><select class="sel" id="stModel"><option value="pruned">剪枝 pruned（快·19.5G）</option><option value="full">完整 full（质量·31G）</option><option value="ref2va">Ref2VA 参考（多素材）</option></select></div>
-          <div class="field"><label>分辨率模式</label><select class="sel" id="stResMode"><option value="native">原生 (≤1920×1088)</option><option value="custom">自定义</option></select></div>
-          <div class="field" id="stCustomRes" style="display:none"><select class="sel" id="stResPreset" style="margin-bottom:5px"></select><div class="row2"><input type="number" class="num" id="stCustomW" placeholder="宽" step="32" min="32"><input type="number" class="num" id="stCustomH" placeholder="高" step="32" min="32"></div></div>
-          <div class="res-preview" id="stResPreview"><i class="fas fa-info-circle"></i> 先上传图</div>
-          <div class="field" id="stNativeScale" style="margin-top:8px"><label>原生缩放 <span id="stScaleVal" style="color:var(--primary);font-weight:600;float:right">100%</span></label><div class="slider-row"><input type="range" id="stScale" min="10" max="100" step="5" value="100"></div><div style="font-size:9px;color:var(--text-dim);margin-top:2px">按比例缩小最终分辨率（显存不足时降低）</div></div>
-          <div class="field" style="margin-top:8px"><label>采样步数</label><div class="slider-row"><input type="range" id="stSteps" min="1" max="12" value="4"><span class="sv" id="stStepsVal">4</span></div></div>
-          <div class="field"><label>时长</label><div class="dur-grid" id="stDurGrid"></div></div>
-          <div class="field"><label>种子</label><div class="row2"><input type="number" class="num" id="stSeed" placeholder="-1 随机" value="-1"><button class="btn" id="stRandSeed" style="flex:0 0 auto;padding:7px 10px"><i class="fas fa-dice"></i></button></div></div>
+          <div class="st-title"><i class="fas fa-sliders"></i> <span data-i18n="参数">参数</span></div>
+          <div class="field"><label data-i18n="模型">模型</label><select class="sel" id="stModel"><option value="pruned" data-i18n="剪枝 pruned（快·19.5G）">剪枝 pruned（快·19.5G）</option><option value="full" data-i18n="完整 full（质量·31G）">完整 full（质量·31G）</option><option value="ref2va" data-i18n="Ref2VA 参考（多素材）">Ref2VA 参考（多素材）</option></select></div>
+          <div class="field"><label data-i18n="分辨率模式">分辨率模式</label><select class="sel" id="stResMode"><option value="native" data-i18n="原生 (≤1920×1088)">原生 (≤1920×1088)</option><option value="custom" data-i18n="自定义">自定义</option></select></div>
+          <div class="field" id="stCustomRes" style="display:none"><select class="sel" id="stResPreset" style="margin-bottom:5px"></select><div class="row2"><input type="number" class="num" id="stCustomW" placeholder="宽" data-i18n-ph="宽" step="32" min="32"><input type="number" class="num" id="stCustomH" placeholder="高" data-i18n-ph="高" step="32" min="32"></div></div>
+          <div class="res-preview" id="stResPreview"><i class="fas fa-info-circle"></i> <span data-i18n="先上传图">先上传图</span></div>
+          <div class="field" id="stNativeScale" style="margin-top:8px"><label><span data-i18n="原生缩放">原生缩放</span> <span id="stScaleVal" style="color:var(--primary);font-weight:600;float:right">100%</span></label><div class="slider-row"><input type="range" id="stScale" min="10" max="100" step="5" value="100"></div><div style="font-size:9px;color:var(--text-dim);margin-top:2px" data-i18n="按比例缩小最终分辨率（显存不足时降低）">按比例缩小最终分辨率（显存不足时降低）</div></div>
+          <div class="field" style="margin-top:8px"><label><span data-i18n="采样步数">采样步数</span></label><div class="slider-row"><input type="range" id="stSteps" min="1" max="12" value="4"><span class="sv" id="stStepsVal">4</span></div></div>
+          <div class="field"><label><span data-i18n="时长">时长</span></label><div class="dur-grid" id="stDurGrid"></div></div>
+          <div class="field"><label><span data-i18n="种子">种子</span></label><div class="row2"><input type="number" class="num" id="stSeed" placeholder="-1 随机" data-i18n-ph="-1 随机" value="-1"><button class="btn" id="stRandSeed" style="flex:0 0 auto;padding:7px 10px"><i class="fas fa-dice"></i></button></div></div>
         </div>
         <div class="st-sec">
-          <div class="st-title"><i class="fas fa-microchip"></i> 加速</div>
-          <label class="toggle"><input type="checkbox" id="stLowVram" checked><span class="box"></span><span>低显存优化<span class="t-desc">精度无损·分块注意力</span></span></label>
-          <label class="toggle"><input type="checkbox" id="stSage"><span class="box"></span><span>SageAttention<span class="t-desc">~2×加速·近似注意力</span></span></label>
-          <label class="toggle"><input type="checkbox" id="stTurbo"><span class="box"></span><span>Turbo LoRA<span class="t-desc">v2 full 少步用</span></span></label>
-          <div class="field" id="stLoraField" style="display:none;margin-top:5px"><input type="text" class="txt" id="stLora" placeholder="留空=自动选"></div>
+          <div class="st-title"><i class="fas fa-microchip"></i> <span data-i18n="加速">加速</span></div>
+          <label class="toggle"><input type="checkbox" id="stLowVram" checked><span class="box"></span><span><span data-i18n="低显存优化">低显存优化</span><span class="t-desc" data-i18n="精度无损·分块注意力">精度无损·分块注意力</span></span></label>
+          <label class="toggle"><input type="checkbox" id="stSage"><span class="box"></span><span>SageAttention<span class="t-desc" data-i18n="~2×加速·近似注意力">~2×加速·近似注意力</span></span></label>
+          <label class="toggle"><input type="checkbox" id="stTurbo"><span class="box"></span><span>Turbo LoRA<span class="t-desc" data-i18n="v2 full 少步用">v2 full 少步用</span></span></label>
+          <div class="field" id="stLoraField" style="display:none;margin-top:5px"><input type="text" class="txt" id="stLora" placeholder="留空=自动选" data-i18n-ph="留空=自动选"></div>
         </div>
       </div>
-      <div class="st-foot"><button class="gen-btn" id="stGen" disabled><i class="fas fa-paper-plane"></i><span>生成</span></button></div>
+      <div class="st-foot"><button class="gen-btn" id="stGen" disabled><i class="fas fa-paper-plane"></i><span data-i18n="生成">生成</span></button></div>
     </div>
   </div>
 
   <!-- SHARED: PARAMS POPUP -->
   <div class="popup" id="popup">
     <div class="pop-sec">
-      <div class="pop-title"><i class="fas fa-sliders"></i> 生成参数</div>
+      <div class="pop-title"><i class="fas fa-sliders"></i> <span data-i18n="生成参数">生成参数</span></div>
       <div class="task-seg" id="pTaskSeg">
-        <button data-t="i2v" class="active">i2v 单图</button>
-        <button data-t="r2v">r2v 多素材</button>
+        <button data-t="i2v" class="active"><span data-i18n="i2v 单图">i2v 单图</span></button>
+        <button data-t="r2v"><span data-i18n="r2v 多素材">r2v 多素材</span></button>
       </div>
-      <div style="font-size:10px;color:var(--text-dim);line-height:1.5" id="pTaskTip">单参考图 → 视频（T8 链）</div>
-      <div class="field"><label>模型</label><select class="sel" id="pModel"><option value="pruned">剪枝 pruned（快）</option><option value="full">完整 full（质量）</option><option value="ref2va">Ref2VA 参考（多素材）</option></select></div>
-      <div class="field"><label>分辨率模式</label><select class="sel" id="pResMode"><option value="native">原生 (≤1920×1088)</option><option value="custom">自定义</option></select></div>
-      <div class="field" id="pCustomRes" style="display:none"><select class="sel" id="pResPreset" style="margin-bottom:5px"></select><div class="row2"><input type="number" class="num" id="pCustomW" placeholder="宽" step="32" min="32"><input type="number" class="num" id="pCustomH" placeholder="高" step="32" min="32"></div></div>
-      <div class="field"><label>分辨率预览</label><div class="res-preview" id="pResPreview"><i class="fas fa-info-circle"></i> 先上传图</div></div>
-      <div class="field" id="pNativeScale"><label>原生缩放 <span id="pScaleVal" style="color:var(--primary);font-weight:600;float:right">100%</span></label><div class="slider-row"><input type="range" id="pScale" min="10" max="100" step="5" value="100"></div><div style="font-size:9px;color:var(--text-dim);margin-top:2px">按比例缩小最终分辨率</div></div>
-      <div class="field"><label>步数</label><div class="slider-row"><input type="range" id="pSteps" min="1" max="12" value="4"><span class="sv" id="pStepsVal">4</span></div></div>
-      <div class="field"><label>时长</label><select class="sel" id="pDuration"></select></div>
-      <div class="field"><label>种子</label><div class="row2"><input type="number" class="num" id="pSeed" placeholder="-1 随机" value="-1"><button class="btn" id="pRandSeed" style="flex:0 0 auto;padding:7px 10px"><i class="fas fa-dice"></i></button></div></div>
+      <div style="font-size:10px;color:var(--text-dim);line-height:1.5" id="pTaskTip"><span data-i18n="单参考图 → 视频（T8 链）">单参考图 → 视频（T8 链）</span></div>
+      <div class="field"><label data-i18n="模型">模型</label><select class="sel" id="pModel"><option value="pruned" data-i18n="剪枝 pruned（快）">剪枝 pruned（快）</option><option value="full" data-i18n="完整 full（质量）">完整 full（质量）</option><option value="ref2va" data-i18n="Ref2VA 参考（多素材）">Ref2VA 参考（多素材）</option></select></div>
+      <div class="field"><label data-i18n="分辨率模式">分辨率模式</label><select class="sel" id="pResMode"><option value="native" data-i18n="原生 (≤1920×1088)">原生 (≤1920×1088)</option><option value="custom" data-i18n="自定义">自定义</option></select></div>
+      <div class="field" id="pCustomRes" style="display:none"><select class="sel" id="pResPreset" style="margin-bottom:5px"></select><div class="row2"><input type="number" class="num" id="pCustomW" placeholder="宽" data-i18n-ph="宽" step="32" min="32"><input type="number" class="num" id="pCustomH" placeholder="高" data-i18n-ph="高" step="32" min="32"></div></div>
+      <div class="field"><label data-i18n="分辨率预览">分辨率预览</label><div class="res-preview" id="pResPreview"><i class="fas fa-info-circle"></i> <span data-i18n="先上传图">先上传图</span></div></div>
+      <div class="field" id="pNativeScale"><label><span data-i18n="原生缩放">原生缩放</span> <span id="pScaleVal" style="color:var(--primary);font-weight:600;float:right">100%</span></label><div class="slider-row"><input type="range" id="pScale" min="10" max="100" step="5" value="100"></div><div style="font-size:9px;color:var(--text-dim);margin-top:2px" data-i18n="按比例缩小最终分辨率">按比例缩小最终分辨率</div></div>
+      <div class="field"><label data-i18n="步数">步数</label><div class="slider-row"><input type="range" id="pSteps" min="1" max="12" value="4"><span class="sv" id="pStepsVal">4</span></div></div>
+      <div class="field"><label data-i18n="时长">时长</label><select class="sel" id="pDuration"></select></div>
+      <div class="field"><label data-i18n="种子">种子</label><div class="row2"><input type="number" class="num" id="pSeed" placeholder="-1 随机" data-i18n-ph="-1 随机" value="-1"><button class="btn" id="pRandSeed" style="flex:0 0 auto;padding:7px 10px"><i class="fas fa-dice"></i></button></div></div>
     </div>
     <div class="pop-sec">
-      <div class="pop-title"><i class="fas fa-rocket"></i> 加速</div>
-      <label class="toggle"><input type="checkbox" id="pLowVram" checked><span class="box"></span><span>低显存优化</span></label>
+      <div class="pop-title"><i class="fas fa-rocket"></i> <span data-i18n="加速">加速</span></div>
+      <label class="toggle"><input type="checkbox" id="pLowVram" checked><span class="box"></span><span data-i18n="低显存优化">低显存优化</span></label>
       <label class="toggle"><input type="checkbox" id="pSage"><span class="box"></span><span>SageAttention</span></label>
       <label class="toggle"><input type="checkbox" id="pTurbo"><span class="box"></span><span>Turbo LoRA</span></label>
-      <div class="field" id="pLoraField" style="display:none;margin-top:5px"><input type="text" class="txt" id="pLora" placeholder="留空=自动选"></div>
+      <div class="field" id="pLoraField" style="display:none;margin-top:5px"><input type="text" class="txt" id="pLora" placeholder="留空=自动选" data-i18n-ph="留空=自动选"></div>
     </div>
-    <div style="display:flex;gap:8px"><button class="btn" id="pReset" style="flex:1">恢复默认</button><button class="btn primary" id="pApply" style="flex:1">应用</button></div>
+    <div style="display:flex;gap:8px"><button class="btn" id="pReset" style="flex:1"><span data-i18n="恢复默认">恢复默认</span></button><button class="btn primary" id="pApply" style="flex:1"><span data-i18n="应用">应用</span></button></div>
   </div>
 
   <!-- SHARED: LIGHTBOX -->
@@ -573,27 +577,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
     <div class="c-wrap">
       <div class="c-head">
         <i class="fas fa-wand-magic-sparkles" style="color:var(--primary)"></i>
-        <b>Ref2VA 提示词编辑器</b>
+        <b data-i18n="Ref2VA 提示词编辑器">Ref2VA 提示词编辑器</b>
         <span class="c-sub" id="cRefSummary"></span>
         <div class="c-spacer"></div>
         <span class="c-count" id="cCount">0 / 4000</span>
-        <span class="c-mode-seg"><button class="c-mode-btn on" id="cModeWhole" title="六段写在一个框里">整段</button><button class="c-mode-btn" id="cModeSplit" title="六段各一个输入框，自动拼装">分栏</button></span>
-        <button class="c-close" id="cClose" title="关闭 (Esc)"><i class="fas fa-times"></i></button>
+        <span class="c-mode-seg"><button class="c-mode-btn on" id="cModeWhole" title="六段写在一个框里" data-i18n-title="六段写在一个框里"><span data-i18n="整段">整段</span></button><button class="c-mode-btn" id="cModeSplit" title="六段各一个输入框，自动拼装" data-i18n-title="六段各一个输入框，自动拼装"><span data-i18n="分栏">分栏</span></button></span>
+        <button class="c-close" id="cClose" title="关闭 (Esc)" data-i18n-title="关闭 (Esc)"><i class="fas fa-times"></i></button>
       </div>
       <div class="c-main">
         <div class="c-left">
           <div class="c-tools" id="cTools"></div>
           <div class="c-edit-wrap" id="cEditWrap">
             <div id="cMirror"></div>
-            <textarea id="cPrompt" spellcheck="false" wrap="soft" placeholder="编写 Ref2VA 提示词… 点上方 token / 右侧缩略图可在光标处插入；或点「六段式骨架」按当前素材数生成模板"></textarea>
+            <textarea id="cPrompt" spellcheck="false" wrap="soft" placeholder="编写 Ref2VA 提示词… 点上方 token / 右侧缩略图可在光标处插入；或点「六段式骨架」按当前素材数生成模板" data-i18n-ph="编写 Ref2VA 提示词… 点上方 token / 右侧缩略图可在光标处插入；或点「六段式骨架」按当前素材数生成模板"></textarea>
           </div>
           <div class="c-split" id="cSplit"></div>
           <div class="c-issues" id="cIssues"></div>
           <div class="c-actions">
-            <span class="c-hint">编辑内容实时同步 · 「应用」= 暂存草稿并关闭（不加素材/调参后再回来）</span>
-            <button class="btn" onclick="clearComposer()"><i class="fas fa-eraser"></i> 清空</button>
-            <button class="btn" id="cApplyBtn"><i class="fas fa-floppy-disk"></i> 应用</button>
-            <button class="btn primary" id="cGenBtn"><i class="fas fa-paper-plane"></i> 生成</button>
+            <span class="c-hint" data-i18n="编辑内容实时同步 · 「应用」= 暂存草稿并关闭（不加素材/调参后再回来）">编辑内容实时同步 · 「应用」= 暂存草稿并关闭（不加素材/调参后再回来）</span>
+            <button class="btn" onclick="clearComposer()"><i class="fas fa-eraser"></i> <span data-i18n="清空">清空</span></button>
+            <button class="btn" id="cApplyBtn"><i class="fas fa-floppy-disk"></i> <span data-i18n="应用">应用</span></button>
+            <button class="btn primary" id="cGenBtn"><i class="fas fa-paper-plane"></i> <span data-i18n="生成">生成</span></button>
           </div>
         </div>
         <div class="c-right" id="cSide"></div>
@@ -608,6 +612,61 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 </div>
 
 <script>
+// ===== I18N (zh=source default; EN_MAP: zh template -> en template, {x} placeholders) =====
+const EN_MAP={
+// topbar
+'对话流':'Chat','总览':'Overview','Studio':'Studio','检测中':'Checking…','在线':'Online','离线':'Offline',
+// views empty / hints
+'准备开始生成':'Ready to start','右侧上传参考图、填写提示词、调整参数，然后点「生成」。':'Upload a reference image on the right, write a prompt, adjust params, then click Generate.',
+// common
+'生成':'Generate','搜索…':'Search…','搜索提示词…':'Search prompts…','全部模型':'All models','全部分辨率':'All resolutions','最新':'Newest','历史':'History',
+'新建工作区':'New workspace','刷新':'Refresh','打开 Ref2VA 提示词大编辑器':'Open Ref2VA prompt composer',
+// task
+'i2v 单图':'i2v single image','r2v 多素材':'r2v multi-asset','单参考图 → 视频（T8 链）':'Single ref image → video (T8 chain)','任务类型':'Task type','参考素材':'Reference assets',
+'模型':'Model','分辨率模式':'Resolution','原生 (≤1920×1088)':'Native (≤1920×1088)','自定义':'Custom','宽':'W','高':'H','先上传图':'Upload an image first',
+'原生缩放':'Native scale','按比例缩小最终分辨率（显存不足时降低）':'Shrink final resolution proportionally (lower when VRAM is tight)','采样步数':'Sampling steps','时长':'Duration','种子':'Seed','-1 随机':'-1 random','加速':'Acceleration',
+'低显存优化':'Low-VRAM mode','精度无损·分块注意力':'Lossless · chunked attention','SageAttention':'SageAttention','~2×加速·近似注意力':'~2× faster · approximate attention','Turbo LoRA':'Turbo LoRA','v2 full 少步用':'For v2 full at few steps','留空=自动选':'Empty = auto-pick',
+'提示词':'Prompt','描述视频内容…（Ctrl+Enter 生成）':'Describe the video… (Ctrl+Enter to generate)','描述你想要的视频…（Ctrl+Enter 生成）':'Describe the video you want… (Ctrl+Enter to generate)','更多参数':'More params','参数已应用':'Params applied','恢复默认':'Reset defaults','应用':'Apply','生成参数':'Generation params','分辨率预览':'Resolution preview','步数':'Steps','按比例缩小最终分辨率':'Shrink final resolution proportionally',
+'关闭 (Esc)':'Close (Esc)','整段':'Whole','分栏':'Split','六段写在一个框里':'All six sections in one box','六段各一个输入框，自动拼装':'One box per section, auto-assembled',
+'工作区名称：':'Workspace name: ','工作区':'Workspace','已创建':'Created','创建失败: ':'Create failed: ','已刷新':'Refreshed',
+'参考图':'Reference image','点击或拖入图片':'Click or drag an image','点击或拖入图片（r2v 可多选 1–9 张）':'Click or drag images (r2v: multi-select 1–9)','图片已上传':'Image uploaded','上传失败: ':'Upload failed: ',
+'删除？\n':'Delete?\n','已删除':'Deleted','删除失败':'Delete failed','无视频':'No video','正在截取最后一帧…':'Grabbing last frame…','截帧失败: ':'Frame grab failed: ','开始下载':'Download started','复用参数重试':'Retry with same params','未知错误':'Unknown error','堆栈':'Traceback','失败':'Failed','播放':'Play','复用参数':'Reuse params','续写':'Continue','下载':'Download','删除':'Delete',
+'r2v 暂不支持续写（无首帧语义）':'r2v continuation unsupported (no first-frame semantics)','r2v 模式模型锁定 ref2va':'r2v locks model to ref2va','r2v 无 native 模式（参考图不裁剪）':'r2v has no native mode (refs are not cropped)',
+'先选工作区':'Pick a workspace first','请选择图片文件':'Select an image file','请选择音频文件':'Select an audio file','最多 {n} 张参考图':'At most {n} reference images','最多 {n} 张参考图（本次取前 {m} 张）':'At most {n} ref images (taking first {m})','已满 {n} 张':'{n} full','最多 {n} 段参考音频':'At most {n} audio refs','最多 {n} 段（本次取前 {m} 段）':'At most {n} audios (taking first {m})','音频已满 {n} 段':'{n} audios full','音频上传失败: ':'Audio upload failed: ','先写提示词':'Write a prompt first','生成完成':'Done','生成失败':'Generate failed','清空':'Clear','草稿已暂存：可去添加素材/调整参数，再点「全屏编写」回来继续':'Draft saved: add assets / tune params, then reopen the composer to continue','仅 r2v 模式可用':'r2v mode only','已按当前 {n} 张参考图生成/替换六段式骨架':'Six-section skeleton built/replaced for your {n} ref images','六段式骨架':'Six-section skeleton','全屏编写':'Fullscreen compose','Ref2VA 提示词指南':'Ref2VA prompt guide',
+'剪枝':'pruned','原生':'Native','随机':'Random','sage':'sage','turbo':'turbo',
+'刚刚':'just now','{n} 分钟前':'{n} min ago','{n} 小时前':'{n} h ago','{n} 天前':'{n} d ago','{n} 步':'{n} steps','音频':'Audio','完整':'full','参考':'ref2va','{n} 图':'{n} imgs','图':'imgs',
+'多素材参考（核心节点链）→ 图片按 <Picture N> 引用':'Multi-asset reference (core node chain) → images referenced as <Picture N>',
+'⚠ ref2va 权重未检测到（{m}），生成会被 ComfyUI 拒绝':'⚠ ref2va weights not found ({m}); ComfyUI will reject generation',
+// stRefTip 内容（r2v 素材区提示）
+'图按上传顺序编号，提示词用 <b>&lt;Picture N&gt;</b> 引用（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;）。可选加 <b>&lt;=3 段音频</b> 作音色参考，用 <b>&lt;Audio N&gt;</b> 引用（每段 2–15s）':'Images are numbered by upload order; reference them in the prompt with <b>&lt;Picture N&gt;</b> (subjects use <b>&lt;Subject N&gt;</b>; do not use &lt;Object x&gt;). Optionally add <b>up to 3 audio clips</b> as voice-timbre references via <b>&lt;Audio N&gt;</b> (each 2–15s)',
+'提交中':'Submitting…','采样中':'Sampling…','处理中':'Processing…','生成中':'Generating…','准备':'Preparing','步 {s} / {m}':'Step {s} / {m}','已用':'Elapsed','耗时':'Time spent','{n} 帧':'{n} frames',
+'共 {n} 条':'{n} total','暂无':'None yet','没有匹配的生成':'No matching generations','无输出':'No output','选择或新建工作区':'Pick or create a workspace','顶栏选择工作区，或点 + 新建。':'Pick a workspace in the top bar, or click + to create one.','还没有生成':'Nothing generated yet','上传图、写提示词、点生成。':'Upload an image, write a prompt, click Generate.','生成结果':'Result','完成 · {s}s':'Done · {s}s','复用':'Reuse','添加':'Add','详情':'Details','帧数':'Frames','时间':'Time','参考素材 ({n})':'Reference assets ({n})','参数已复用':'Params reused','已复用 r2v 参数与素材':'r2v params & assets reused','已截取最后一帧并复用参数':'Last frame captured; params reused','执行节点 {n}':'Running node {n}','正在执行节点 {n}':'Running node {n}','节点 {n} 完成':'Node {n} done','(无提示词)':'(no prompt)','最早':'Oldest','添加参考音频（≤3 段, 2–15s）':'Add audio refs (≤3, 2–15s each)','添加参考音频（≤3 段, 2–15s/段）':'Add audio refs (≤3, 2–15s each)','添加素材（可多选，追加到末尾）':'Add assets (multi-select, appended)','添加素材':'Add assets','上传参考图（r2v 可多张, 上限 9）':'Upload reference images (r2v: up to 9)',
+'提示词引用了 <Picture {n}>, 但只上传了 {c} 张参考图':'Prompt references <Picture {n}> but only {c} images uploaded','提示词引用了 <Audio {n}>, 但只上传了 {c} 段音频':'Prompt references <Audio {n}> but only {c} audios uploaded','官方语法禁止 <Object x>, 请用 <Subject N> 连续编号':'Official syntax forbids <Object x>; use consecutive <Subject N> from 1',
+'计算中…':'Calculating…','{w}×{h} 超过面积上限, 后端会等比收缩':'{w}×{h} exceeds the area limit; backend will scale down','{w}×{h} · {f}帧 · {d}（参考图不裁剪, 交给节点 match）':'{w}×{h} · {f} frames · {d} (refs uncropped, matched by node)','{w}×{h} · {f}帧 · {d}':'{w}×{h} · {f} frames · {d}',
+// composer tools
+'快速插入':'Quick insert','引用:':'Refs:','音频:':'Audio:','语法:':'Syntax:','<Audio {n}> 音色参考':'<Audio {n}> voice timbre','主体占位：把 N 改成从 1 起的连续编号':'Subject placeholder: replace N with consecutive numbers from 1','说话人 = Subject 1（配合音频参考）':'Speaker = Subject 1 (with audio refs)','台词原文放标签里，不要翻译':'Put the original line in the tag; do not translate','镜头描述起始标记':'Shot description start marker',
+'同一人·多角度':'Same person · multiple angles','人物 + 道具':'Person + prop','台词 (S1)+<d>':'Dialogue (S1)+<d>',
+// composer side
+'素材引用（点击缩略图插入引用）':'Reference assets (click a thumbnail to insert)','还没有参考图——直接点下方「添加素材」上传（1–9 张，按序编号），或在 Studio 面板传好后这里自动出现。':'No reference images yet — click Add assets below to upload (1–9, numbered in order), or upload in the Studio panel and they appear here.','同一人的多张角度图都指向同一个 <code>&lt;Subject N&gt;</code>（例 1 演示）。删图请回 Studio 面板素材格。':'Multiple angles of the same person should point to the same <code>&lt;Subject N&gt;</code> (see example 1). To remove an image, use the Studio asset grid.','官方语法速查':'Syntax cheat sheet','图引用：<code>&lt;Picture N&gt;</code>，按上传顺序编号，可多次引用同一张':'Images: <code>&lt;Picture N&gt;</code>, numbered by upload order, may repeat','主体定义：<code>&lt;Subject N&gt;</code> 从 1 起<b>连续编号</b>；<b style="color:var(--error)">禁止 &lt;Object x&gt;</b>':'Subjects: <code>&lt;Subject N&gt;</code> numbered <b>consecutively from 1</b>; <b style="color:var(--error)">no &lt;Object x&gt;</b>','说话人：<code>(S1)</code> 挂在主体后（P2 音频参考）':'Speaker: append <code>(S1)</code> to the subject (P2 audio refs)','台词：<code>&lt;d&gt;[Chinese] 原文&lt;/d&gt;</code>，对白<b>不翻译</b>':'Dialogue: <code>&lt;d&gt;[Chinese] original&lt;/d&gt;</code>, <b>never translate</b>','总长度 ≤ 4000 字符':'Total length ≤ 4000 chars',
+'官方六段式':'Official six sections','— 把每张图指派给主体':'— assign each image to a subject','— 一句话剧情':'— one-sentence story','— 必须保留的身份/服饰/细节':'— identity/outfit/details to preserve','— 动作·机位·运镜（主体发挥区）':'— action·camera·moves (subject performance)','— 环境音':'— ambience','— 配乐，无则 N/A':'— music, or N/A','按当前 {n} 张图生成骨架':'Generate skeleton for current {n} images','示例库（载入即用）':'Examples (load & use)','需 {n} 图':'needs {n} imgs','载入示例':'Load example','红线速查':'Red lines','<code>&lt;Picture N&gt;</code> 最大编号 ≤ 已传图数':'<code>&lt;Picture N&gt;</code> max number ≤ uploaded images','主体编号从 1 连续，禁止跳号':'Subject numbers consecutive from 1, no gaps','禁止 <code>&lt;Object x&gt;</code>':'No <code>&lt;Object x&gt;</code>','对白原文进 <code>&lt;d&gt;</code>，别翻译':'Original dialogue goes into <code>&lt;d&gt;</code>; do not translate','无 native 分辨率：画布 = 自定义尺寸':'No native resolution: canvas = custom size',
+'已上传 {a}/9 张参考图':'{a}/9 reference images uploaded','未选工作区':'No workspace selected','已载入示例「{name}」，还需 {n} 张参考图':'Example "{name}" loaded; need {n} more reference images','已载入示例「{name}」':'Example "{name}" loaded','{n} 字':'{n} chars','语法 OK · 与 {a} 张参考图':'Syntax OK · matches {a} reference image(s)',' + {b} 段音频':' + {b} audio clip(s)',' 匹配（生成前仍会终检）':' (final check still runs before generation)',
+'<Picture {n}> 越界：当前只上传了 {c} 张参考图':'<Picture {n}> out of range: only {c} reference images uploaded','<Audio {n}> 越界：当前只上传了 {c} 段音频':'<Audio {n}> out of range: only {c} audio clips uploaded','官方语法禁止 <Object x>，请改用 <Subject N> 连续编号':'Official syntax forbids <Object x>; use consecutive <Subject N> from 1','<Subject {k}> 缺失：主体编号需从 1 连续（现有最大 {m}）':'<Subject {k}> missing: subject numbers must be consecutive from 1 (current max {m})','字数 {n}/4000 超限':'Length {n}/4000 exceeded',
+'插入官方六段式骨架':'Insert official six-section skeleton','图片按上传顺序编号：':'Images numbered by upload order:','提示词中可多次引用同一张':'the same image may be referenced multiple times','主体（人/物）必须用':'Subjects (people/objects) must use','定义并从 1 连续编号':'defined and numbered consecutively from 1','禁止':'forbidden','音频按上传顺序用':'Audios referenced by upload order as','引用（≤3 段, 每段 2–15s, 总 ≤15s）':'referenced (≤3 clips, 2–15s each, ≤15s total)','音色句式':'voice-timbre sentence','注明参考音色、不复制原话':'state the timbre reference; do not copy the original wording','音频参考用':'audio refs use','标注说话主体':'marks the speaker','台词原文用':'original line goes in','台词原文':'original line','对白不翻译':'never translate dialogue','提示词 ≤4000 字符':'prompt ≤4000 chars','音频参考每段 2–15s、≤3 段、总时长 ≤15s':'audio refs 2–15s each, ≤3 clips, ≤15s total','官方六段式':'official six sections','总长限制':'Length limits','说话人':'Speaker','引用语法':'Reference syntax','身份保持句式':'Identity sentence',
+'先上传参考图':'Upload a reference image first','参数':'Params','4 步':'4 steps','×{n}图':'×{n} imgs','提示词编辑':'Prompt editor','Ctrl+Enter 生成':'Ctrl+Enter to generate','剪枝 pruned（快·19.5G）':'pruned (fast · 19.5G)','完整 full（质量·31G）':'full (quality · 31G)','Ref2VA 参考（多素材）':'Ref2VA reference (multi-asset)','剪枝 pruned（快）':'pruned (fast)','完整 full（质量）':'full (quality)','Ref2VA 提示词编辑器':'Ref2VA prompt composer','编辑内容实时同步 · 「应用」= 暂存草稿并关闭（不加素材/调参后再回来）':'Edits sync live · Apply = stash the draft and close (come back after adding assets / tuning params)','编写 Ref2VA 提示词… 点上方 token / 右侧缩略图可在光标处插入；或点「六段式骨架」按当前素材数生成模板':'Write the Ref2VA prompt… click tokens above / thumbnails on the right to insert at the cursor; or click Six-section skeleton to build a template for your current assets','MiniMax-H3 视频生成':'MiniMax-H3 Video Generation',
+};
+let LANG=(new URLSearchParams(location.search).get('lang'))||localStorage.getItem('h3_lang')||((navigator.language||'').toLowerCase().startsWith('zh')?'zh':'en');
+function langIsZh(){return LANG==='zh';}
+function t(s,vars){if(!langIsZh()&&EN_MAP[s]!=null)s=EN_MAP[s];if(vars)for(const k in vars)s=s.split('{'+k+'}').join(vars[k]);return s;}
+function transStatus(s){if(!s)return'';if(langIsZh())return s;const m=s.match(/执行节点\s*(.+)/);if(m)return t('执行节点 {n}',{n:m[1]});return s;}
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'));});
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{el.title=t(el.getAttribute('data-i18n-title'));});
+  if($('stGuideBody'))$('stGuideBody').innerHTML=guideHtml();
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('#langSeg button').forEach(b=>b.classList.toggle('active',b.dataset.lang===LANG));
+}
+function setLang(l){LANG=l;localStorage.setItem('h3_lang',l);applyLang();renderActive();syncTaskUI();syncChips();syncPopup();syncStudioPanel();if(composerOpen()){refreshComposerRefs();renderComposerTools();renderComposerSide();renderIssues();}}
 // ===== STATE =====
 const App={
   view:'studio',workspaces:[],curWs:null,gens:[],
@@ -629,15 +688,16 @@ function esc(s){return(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':
 function durationFrames(sec){const t=sec*24;const n=Math.max(0,Math.ceil((t-5)/17));return 5+17*n;}
 function fmtDur(sec){return(durationFrames(sec)/24).toFixed(1)+'s';}
 function timeNow(){return new Date().toLocaleString('zh-CN',{hour12:false});}
-function relTime(ts){if(!ts)return'';const d=new Date(ts.replace(' ','T'));const diff=(Date.now()-d.getTime())/1000;if(isNaN(diff))return'';if(diff<60)return'刚刚';if(diff<3600)return Math.floor(diff/60)+'分前';if(diff<86400)return Math.floor(diff/3600)+'h前';return Math.floor(diff/86400)+'天前';}
+function relTime(ts){if(!ts)return'';const d=new Date(ts.replace(' ','T'));const diff=(Date.now()-d.getTime())/1000;if(isNaN(diff))return'';if(diff<60)return t('刚刚');if(diff<3600)return t('{n} 分钟前',{n:Math.floor(diff/60)});if(diff<86400)return t('{n} 小时前',{n:Math.floor(diff/3600)});return t('{n} 天前',{n:Math.floor(diff/86400)});}
 function mediaUrl(g,f){return'/api/workspaces/'+encodeURIComponent(App.curWs)+'/media/'+encodeURIComponent(f);}
 function isR2V(g){return (g&&(g.task_type==='r2v'||(g.params&&g.params.task_type==='r2v')));}
-function paramsChips(p){const c=[];if(p&&p.task_type==='r2v')c.push({t:'r2v 多素材',cls:'r2v'});c.push({t:p.model==='full'?'full':(p.model==='ref2va'?'ref2va':'pruned'),cls:p.model==='full'?'full':''});const w=p.width||p.custom_w,h=p.height||p.custom_h;c.push({t:(w&&h)?w+'×'+h:'原生',cls:''});c.push({t:p.steps+'步',cls:''});c.push({t:fmtDur(p.duration||5),cls:''});if(p.sage)c.push({t:'sage',cls:'warn'});if(p.turbo_lora)c.push({t:'turbo',cls:'warn'});c.push({t:p.seed>=0?'#'+p.seed:'随机',cls:''});return c;}
+function paramsChips(p){const c=[];if(p&&p.task_type==='r2v')c.push({t:t('r2v 多素材'),cls:'r2v'});c.push({t:p.model==='full'?'full':(p.model==='ref2va'?'ref2va':'pruned'),cls:p.model==='full'?'full':''});const w=p.width||p.custom_w,h=p.height||p.custom_h;c.push({t:(w&&h)?w+'×'+h:t('原生'),cls:''});c.push({t:t('{n} 步',{n:p.steps}),cls:''});c.push({t:fmtDur(p.duration||5),cls:''});if(p.sage)c.push({t:'sage',cls:'warn'});if(p.turbo_lora)c.push({t:'turbo',cls:'warn'});c.push({t:p.seed>=0?'#'+p.seed:t('随机'),cls:''});return c;}
 function refsCountBadge(n){return n?`<span class="badge-refs"><i class="fas fa-images"></i> r2v ×${n}</span>`:'';}
-function audioRefsBadge(n){return n?`<span class="badge-refs"><i class="fas fa-microphone"></i> 音频×${n}</span>`:'';}
+function audioRefsBadge(n){return n?`<span class="badge-refs"><i class="fas fa-microphone"></i> ${t('音频')}×${n}</span>`:'';}
+function REF_TIP_HTML(){return t('图按上传顺序编号，提示词用 <b>&lt;Picture N&gt;</b> 引用（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;）。可选加 <b>&lt;=3 段音频</b> 作音色参考，用 <b>&lt;Audio N&gt;</b> 引用（每段 2–15s）');}
 
 // ===== COMFY + WORKSPACES =====
-async function checkComfy(){try{const s=await api('/api/comfyui/status');$('comfyDot').className='dot '+(s.up?'up':'down');$('comfyTxt').textContent=s.up?'在线':'离线';if(s.durations)App.settings.durations=s.durations;if(s.res_presets)App.settings.res_presets=s.res_presets;if(s.max_pixels)App.settings.max_pixels=s.max_pixels;if(typeof s.ref2va_present!=='undefined'){App.settings.ref2va_present=s.ref2va_present;App.settings.ref2va_model=s.ref2va_model||'';syncTaskUI();}}catch(e){$('comfyDot').className='dot down';$('comfyTxt').textContent='离线';}}
+async function checkComfy(){try{const s=await api('/api/comfyui/status');$('comfyDot').className='dot '+(s.up?'up':'down');$('comfyTxt').textContent=s.up?t('在线'):t('离线');if(s.durations)App.settings.durations=s.durations;if(s.res_presets)App.settings.res_presets=s.res_presets;if(s.max_pixels)App.settings.max_pixels=s.max_pixels;if(typeof s.ref2va_present!=='undefined'){App.settings.ref2va_present=s.ref2va_present;App.settings.ref2va_model=s.ref2va_model||'';syncTaskUI();}}catch(e){$('comfyDot').className='dot down';$('comfyTxt').textContent=t('离线');}}
 async function loadWorkspaces(){App.workspaces=await api('/api/workspaces');const sel=$('wsSel');sel.innerHTML=App.workspaces.map(w=>`<option value="${esc(w.name)}">${esc(w.name)} (${w.count})</option>`).join('');if(App.curWs)sel.value=App.curWs;renderResPresets();renderDurGrid();}
 async function selectWs(name){App.curWs=name;$('wsSel').value=name;App.uploadedImage=null;App.refsImages=[];resetImgUIs();await loadGens();}
 async function loadGens(){if(!App.curWs){App.gens=[];renderActive();return;}try{App.gens=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/generations');}catch(e){App.gens=[];}App.gens.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));if(!App.currentGen&&App.gens.length)App.currentGen=App.gens[0];renderActive();}
@@ -690,7 +750,7 @@ function syncTaskUI(){
   [['stTaskSeg','stTaskTip'],['pTaskSeg','pTaskTip']].forEach(([segId,tipId])=>{
     const seg=$(segId);if(!seg)return;
     seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.t===(r2v?'r2v':'i2v')));
-    $(tipId).textContent=r2v?'多素材参考（核心节点链）→ 图片按 <Picture N> 引用':'单参考图 → 视频（T8 链）';
+    $(tipId).textContent=r2v?t('多素材参考（核心节点链）→ 图片按 <Picture N> 引用'):t('单参考图 → 视频（T8 链）');
   });
   // 模型下拉: r2v 锁 ref2va; i2v 锁 pruned/full
   const stM=$('stModel'),pM=$('pModel');
@@ -705,7 +765,7 @@ function syncTaskUI(){
   if(r2vPanel){
     $('stImgDrop').style.display=r2v?'none':'block';
     $('stRefGrid').style.display=r2v?'grid':'none';
-    $('stRefTip').style.display=r2v?'block':'none';
+    const rt=$('stRefTip');if(rt){rt.style.display=r2v?'block':'none';rt.innerHTML=r2v?REF_TIP_HTML():'';}
     $('stGuide').style.display=r2v?'block':'none';
     const pt=$('stPromptTools');if(pt)pt.style.display=r2v?'flex':'none';
     const cc=$('chipComposer');if(cc)cc.style.display=r2v?'':'none';
@@ -715,17 +775,17 @@ function syncTaskUI(){
   }
   // ref2va 权重缺失提示 (仅 r2v 且已探测)
   const miss=!App.settings.ref2va_present;
-  if(r2v){const tip=$('stTaskTip');if(tip&&miss)tip.textContent='⚠ ref2va 权重未检测到（'+(App.settings.ref2va_model||'?')+'），生成会被 ComfyUI 拒绝';}
+  if(r2v){const tip=$('stTaskTip');if(tip&&miss)tip.textContent=t('⚠ ref2va 权重未检测到（{m}），生成会被 ComfyUI 拒绝',{m:(App.settings.ref2va_model||'?')});}
 }
 
 // ===== r2v 多图上传 (Studio 9 格 + chat 逐张追加) =====
 async function addRefImageFiles(files){
-  if(!App.curWs){showToast('先选工作区','warn');return;}
+  if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
   const list=[...files].filter(f=>f&&f.type&&f.type.startsWith('image/'));
-  if(!list.length){showToast('请选择图片文件','warn');return;}
+  if(!list.length){showToast(t('请选择图片文件'),'warn');return;}
   const room=R2V_MAX_IMAGES-App.refsImages.length;
-  if(room<=0){showToast(`最多 ${R2V_MAX_IMAGES} 张参考图`,'warn');return;}
-  if(list.length>room)showToast(`最多 ${R2V_MAX_IMAGES} 张参考图（本次取前 ${room} 张）`,'warn');
+  if(room<=0){showToast(t('最多 {n} 张参考图',{n:R2V_MAX_IMAGES}),'warn');return;}
+  if(list.length>room)showToast(t('最多 {n} 张参考图（本次取前 {m} 张）',{n:R2V_MAX_IMAGES,m:room}),'warn');
   for(const f of list.slice(0,room)){
     try{
       const fd=new FormData();
@@ -734,19 +794,19 @@ async function addRefImageFiles(files){
       const res=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/upload-media',{method:'POST',body:fd});
       App.refsImages.push(res.filename);
       renderRefGrid();syncImgUIs();updateGenBtns();updateResPreviews();
-    }catch(e){showToast('上传失败: '+e.message,'warn');break;}
+    }catch(e){showToast(t('上传失败: ')+e.message,'warn');break;}
   }
-  if(App.refsImages.length>=R2V_MAX_IMAGES)showToast(`已满 ${R2V_MAX_IMAGES} 张`,'check');
+  if(App.refsImages.length>=R2V_MAX_IMAGES)showToast(t('已满 {n} 张',{n:R2V_MAX_IMAGES}),'check');
   refreshComposerRefs();
 }
 function renderRefGrid(){
   const grid=$('stRefGrid');if(!grid)return;
   let html='';
   App.refsImages.forEach((fn,i)=>{
-    html+=`<div class="r2v-cell" data-i="${i}"><img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(fn)}"><span class="cell-num">&lt;Picture ${i+1}&gt;</span><button class="cell-del" title="删除"><i class="fas fa-xmark"></i></button></div>`;
+    html+=`<div class="r2v-cell" data-i="${i}"><img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(fn)}"><span class="cell-num">&lt;Picture ${i+1}&gt;</span><button class="cell-del" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`;
   });
   if(App.refsImages.length<R2V_MAX_IMAGES){
-    html+=`<div class="r2v-cell r2v-add" id="stRefAdd"><i class="fas fa-plus"></i><span>添加</span></div>`;
+    html+=`<div class="r2v-cell r2v-add" id="stRefAdd"><i class="fas fa-plus"></i><span>${t('添加')}</span></div>`;
   }
   grid.innerHTML=html;
   grid.querySelectorAll('.r2v-cell[data-i]').forEach(cell=>{
@@ -759,34 +819,34 @@ function removeAllRefs(){App.refsImages=[];App.refsAudios=[];renderRefGrid();ren
 
 // ===== r2v 音频参考 (P2: <=3 段, 每段 2-15s; 服务端逐段校验时长) =====
 async function addRefAudioFiles(files){
-  if(!App.curWs){showToast('先选工作区','warn');return;}
+  if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
   const list=[...files].filter(f=>f&&f.type&&f.type.startsWith('audio/'));
-  if(!list.length){showToast('请选择音频文件','warn');return;}
+  if(!list.length){showToast(t('请选择音频文件'),'warn');return;}
   const room=R2V_MAX_AUDIOS-App.refsAudios.length;
-  if(room<=0){showToast(`最多 ${R2V_MAX_AUDIOS} 段参考音频`,'warn');return;}
-  if(list.length>room)showToast(`最多 ${R2V_MAX_AUDIOS} 段（本次取前 ${room} 段）`,'warn');
+  if(room<=0){showToast(t('最多 {n} 段参考音频',{n:R2V_MAX_AUDIOS}),'warn');return;}
+  if(list.length>room)showToast(t('最多 {n} 段（本次取前 {m} 段）',{n:R2V_MAX_AUDIOS,m:room}),'warn');
   for(const f of list.slice(0,room)){
     try{
       const fd=new FormData();fd.append('type','audio');fd.append('file',f,f.name);
       const res=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/upload-media',{method:'POST',body:fd});
       App.refsAudios.push({fn:res.filename,dur:res.duration_s});
       renderRefAudios();updateGenBtns();
-    }catch(e){showToast('音频上传失败: '+e.message,'warn');break;}
+    }catch(e){showToast(t('音频上传失败: ')+e.message,'warn');break;}
   }
-  if(App.refsAudios.length>=R2V_MAX_AUDIOS)showToast(`音频已满 ${R2V_MAX_AUDIOS} 段`,'check');
+  if(App.refsAudios.length>=R2V_MAX_AUDIOS)showToast(t('音频已满 {n} 段',{n:R2V_MAX_AUDIOS}),'check');
   refreshComposerRefs();
 }
 function renderRefAudios(){
   const box=$('stRefAudios');if(!box)return;
   const r2v=taskIsR2V()&&App.curWs;
   box.style.display=(r2v&&App.refsAudios.length)?'flex':'none';
-  box.innerHTML=App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><span class="fn">${esc(a.fn)}</span><button class="r2v-aud-del" data-i="${i}" title="删除"><i class="fas fa-xmark"></i></button></div>`).join('');
+  box.innerHTML=App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><span class="fn">${esc(a.fn)}</span><button class="r2v-aud-del" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('');
   box.querySelectorAll('.r2v-aud-del').forEach(b=>b.onclick=()=>{App.refsAudios.splice(+b.dataset.i,1);renderRefAudios();updateGenBtns();refreshComposerRefs();});
 }
 
 // ===== IMAGE UPLOAD (shared) =====
 function handleImg(f){
-  if(!App.curWs){showToast('先选工作区','warn');return;}
+  if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
   if(taskIsR2V()){ // r2v 模式: 追加为多图参考
     addRefImageFiles([f]);return;
   }
@@ -794,8 +854,8 @@ function handleImg(f){
   r.onload=async()=>{
     try{
       const res=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/upload-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:r.result,mime:f.type})});
-      App.uploadedImage=res.filename;syncImgUIs();updateGenBtns();updateResPreviews();showToast('图片已上传','check');
-    }catch(e){showToast('上传失败: '+e.message,'warn');}
+      App.uploadedImage=res.filename;syncImgUIs();updateGenBtns();updateResPreviews();showToast(t('图片已上传'),'check');
+    }catch(e){showToast(t('上传失败: ')+e.message,'warn');}
   };
   r.readAsDataURL(f);
 }
@@ -807,8 +867,8 @@ function syncImgUIs(){
   else cb.innerHTML='<i class="fas fa-image"></i>';}
   // studio img drop (i2v only)
   const sd=$('stImgDrop');
-  if(App.uploadedImage&&App.curWs&&!taskIsR2V()){sd.classList.add('has-img');sd.innerHTML=`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(App.uploadedImage)}"><div class="ovl">参考图</div><button class="chg"><i class="fas fa-arrows-rotate"></i></button>`;sd.querySelector('.chg').onclick=e=>{e.stopPropagation();$('stImgFile').click();};}
-  else{sd.classList.remove('has-img');sd.innerHTML='<i class="fas fa-cloud-arrow-up"></i><span>点击或拖入图片</span>';}
+  if(App.uploadedImage&&App.curWs&&!taskIsR2V()){sd.classList.add('has-img');sd.innerHTML=`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(App.uploadedImage)}"><div class="ovl">${t('参考图')}</div><button class="chg"><i class="fas fa-arrows-rotate"></i></button>`;sd.querySelector('.chg').onclick=e=>{e.stopPropagation();$('stImgFile').click();};}
+  else{sd.classList.remove('has-img');sd.innerHTML='<i class="fas fa-cloud-arrow-up"></i><span>'+t('点击或拖入图片')+'</span>';}
 }
 function resetImgUIs(){App.uploadedImage=null;App.refsImages=[];App.refsAudios=[];syncImgUIs();updateGenBtns();updateResPreviews();if($('stRefGrid'))renderRefGrid();if($('stRefAudios'))renderRefAudios();refreshComposerRefs();}
 $('chatImgFile').onchange=e=>{if(taskIsR2V()){addRefImageFiles([...e.target.files]);}else if(e.target.files[0])handleImg(e.target.files[0]);e.target.value='';};
@@ -834,7 +894,7 @@ $('stPrompt').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key===
 
 // ===== PARAMS: POPUP (chat) =====
 function renderResPresets(){const opts=App.settings.res_presets.map(p=>`<option value="${p.w}x${p.h}">${esc(p.label)}</option>`).join('');$('pResPreset').innerHTML=opts;$('stResPreset').innerHTML=opts;}
-function renderDurGrid(){const el=$('stDurGrid');el.innerHTML=App.settings.durations.map(d=>`<button class="dur-btn ${d===App.params.duration?'active':''}" data-d="${d}">${d}s</button>`).join('');el.querySelectorAll('.dur-btn').forEach(b=>b.onclick=()=>{App.params.duration=+b.dataset.d;renderDurGrid();updateResPreviews();});const ds=$('pDuration');ds.innerHTML=App.settings.durations.map(d=>`<option value="${d}">${d}s → ${durationFrames(d)}帧 (${fmtDur(d)})</option>`).join('');ds.value=App.settings.durations.includes(App.params.duration)?App.params.duration:5;}
+function renderDurGrid(){const el=$('stDurGrid');el.innerHTML=App.settings.durations.map(d=>`<button class="dur-btn ${d===App.params.duration?'active':''}" data-d="${d}">${d}s</button>`).join('');el.querySelectorAll('.dur-btn').forEach(b=>b.onclick=()=>{App.params.duration=+b.dataset.d;renderDurGrid();updateResPreviews();});const ds=$('pDuration');ds.innerHTML=App.settings.durations.map(d=>`<option value="${d}">${d}s → ${t('{n} 帧',{n:durationFrames(d)})} (${fmtDur(d)})</option>`).join('');ds.value=App.settings.durations.includes(App.params.duration)?App.params.duration:5;}
 function syncPopup(){
   $('pModel').value=App.params.model;$('pResMode').value=App.params.res_mode;
   $('pCustomW').value=App.params.custom_w||'';$('pCustomH').value=App.params.custom_h||'';
@@ -859,9 +919,9 @@ function collectPopup(){
   App.params.lora_name=$('pLora').value.trim();
 }
 function syncChips(){
-  $('chipModel').querySelector('span').textContent=App.params.model==='full'?'完整':(App.params.model==='ref2va'?'参考':'剪枝');
-  $('chipRes').querySelector('span').textContent=App.params.res_mode==='custom'?(App.params.custom_w+'×'+App.params.custom_h):'原生';
-  $('chipSteps').querySelector('span').textContent=App.params.steps+' 步';
+  $('chipModel').querySelector('span').textContent=App.params.model==='full'?t('完整'):(App.params.model==='ref2va'?t('参考'):t('剪枝'));
+  $('chipRes').querySelector('span').textContent=App.params.res_mode==='custom'?(App.params.custom_w+'×'+App.params.custom_h):t('原生');
+  $('chipSteps').querySelector('span').textContent=t('{n} 步',{n:App.params.steps});
   $('chipDur').querySelector('span').textContent=App.params.duration+'s';
   $('chipSage').classList.toggle('on',App.params.sage);
 }
@@ -875,10 +935,10 @@ $('pScale').oninput=e=>{$('pScaleVal').textContent=e.target.value+'%';App.params
 $('pDuration').onchange=()=>{App.params.duration=parseInt($('pDuration').value)||5;syncChips();};
 $('pRandSeed').onclick=()=>{$('pSeed').value=Math.floor(Math.random()*2**31);};
 $('pTurbo').onchange=()=>{$('pLoraField').style.display=$('pTurbo').checked?'block':'none';};
-$('pApply').onclick=()=>{collectPopup();syncChips();closePopup();showToast('参数已应用','check');};
+$('pApply').onclick=()=>{collectPopup();syncChips();closePopup();showToast(t('参数已应用'),'check');};
 $('pReset').onclick=()=>{App.params={model:'pruned',steps:4,res_mode:'native',custom_w:1280,custom_h:720,duration:5,seed:-1,low_vram:true,sage:false,turbo_lora:false,lora_name:'',native_scale:1.0};syncPopup();renderDurGrid();};
-$('chipModel').onclick=()=>{if(taskIsR2V()){showToast('r2v 模式模型锁定 ref2va','warn');return;}App.params.model=App.params.model==='full'?'pruned':'full';syncPopup();};
-$('chipRes').onclick=()=>{if(taskIsR2V()){showToast('r2v 无 native 模式（参考图不裁剪）','warn');return;}App.params.res_mode=App.params.res_mode==='custom'?'native':'custom';syncPopup();};
+$('chipModel').onclick=()=>{if(taskIsR2V()){showToast(t('r2v 模式模型锁定 ref2va'),'warn');return;}App.params.model=App.params.model==='full'?'pruned':'full';syncPopup();};
+$('chipRes').onclick=()=>{if(taskIsR2V()){showToast(t('r2v 无 native 模式（参考图不裁剪）'),'warn');return;}App.params.res_mode=App.params.res_mode==='custom'?'native':'custom';syncPopup();};
 $('chipSage').onclick=()=>{App.params.sage=!App.params.sage;syncChips();};
 $('chipParams').onclick=()=>{$('popup').classList.toggle('active');syncPopup();};
 function closePopup(){$('popup').classList.remove('active');}
@@ -924,25 +984,25 @@ async function updateResPreviewEl(elId){
   const el=$(elId);if(!el)return;
   // r2v: 无 native/cover 语义, 画布即 custom 尺寸 (后端 snap32), 不需参考图
   if(taskIsR2V()){
-    if(!App.curWs){el.className='res-preview';el.innerHTML='<i class="fas fa-info-circle"></i> 先选工作区';return;}
+    if(!App.curWs){el.className='res-preview';el.innerHTML='<i class="fas fa-info-circle"></i> '+t('先选工作区');return;}
     const w=SNAP32(App.params.custom_w||864),h=SNAP32(App.params.custom_h||480);
     let fr=durationFrames(App.params.duration||5);
-    if(w*h>App.settings.max_pixels){el.className='res-preview warn';el.innerHTML=`<i class="fas fa-triangle-exclamation"></i> ${w}×${h} 超过面积上限, 后端会等比收缩`;return;}
-    el.className='res-preview';el.innerHTML=`<i class="fas fa-check-circle"></i> ${w}×${h} · ${fr}帧 · ${fmtDur(fr/24)}（参考图不裁剪, 交给节点 match）`;
+    if(w*h>App.settings.max_pixels){el.className='res-preview warn';el.innerHTML=`<i class="fas fa-triangle-exclamation"></i> ${t('{w}×{h} 超过面积上限, 后端会等比收缩',{w,h})}`;return;}
+    el.className='res-preview';el.innerHTML=`<i class="fas fa-check-circle"></i> ${t('{w}×{h} · {f}帧 · {d}（参考图不裁剪, 交给节点 match）',{w,h,f:fr,d:fmtDur(fr/24)})}`;
     return;
   }
-  if(!App.uploadedImage||!App.curWs){el.className='res-preview';el.innerHTML='<i class="fas fa-info-circle"></i> 先上传图';return;}
-  el.className='res-preview';el.innerHTML='计算中…';
+  if(!App.uploadedImage||!App.curWs){el.className='res-preview';el.innerHTML='<i class="fas fa-info-circle"></i> '+t('先上传图');return;}
+  el.className='res-preview';el.innerHTML=t('计算中…');
   try{
     const r=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/preview-resolution',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:App.uploadedImage,res_mode:App.params.res_mode,custom_w:App.params.custom_w,custom_h:App.params.custom_h,native_scale:App.params.native_scale})});
-    el.innerHTML=`<i class="fas fa-check-circle"></i> ${r.width}×${r.height} · ${r.length}帧 · ${fmtDur(r.length/24)}`;
-  }catch(e){el.className='res-preview warn';el.innerHTML='<i class="fas fa-triangle-exclamation"></i> '+(e.message||'失败');}
+    el.innerHTML=`<i class="fas fa-check-circle"></i> ${t('{w}×{h} · {f}帧 · {d}',{w:r.width,h:r.height,f:r.length,d:fmtDur(r.length/24)})}`;
+  }catch(e){el.className='res-preview warn';el.innerHTML='<i class="fas fa-triangle-exclamation"></i> '+(e.message||t('失败'));}
 }
 
 // ===== GEN BUTTONS =====
 function haveRefs(){return taskIsR2V()?App.refsImages.length>0:!!App.uploadedImage;}
 function updateGenBtns(){const ok=App.curWs&&haveRefs()&&getActivePromptValue().trim();$('chatSend').disabled=!ok||App.busy;$('stGen').disabled=!ok||App.busy;}
-function setGenBusy(busy){App.busy=busy;const btn=App.view==='chat'?'chatSend':'stGen';$(btn).disabled=busy||!haveRefs()||!getActivePromptValue().trim();$(btn).innerHTML=busy?'<span class="spinner"></span><span>生成中</span>':'<i class="fas fa-paper-plane"></i><span>生成</span>';if(!busy)updateGenBtns();}
+function setGenBusy(busy){App.busy=busy;const btn=App.view==='chat'?'chatSend':'stGen';$(btn).disabled=busy||!haveRefs()||!getActivePromptValue().trim();$(btn).innerHTML=busy?'<span class="spinner"></span><span>'+t('生成中')+'</span>':'<i class="fas fa-paper-plane"></i><span>'+t('生成')+'</span>';if(!busy)updateGenBtns();}
 $('chatSend').onclick=generate;$('stGen').onclick=generate;
 
 // ===== GENERATION (shared) =====
@@ -950,23 +1010,23 @@ function validateR2VPrompt(prompt,refCount,audCount){
   // <Picture N> 引用编号不得超过实际图片数
   const m=[...prompt.matchAll(/<Picture\s+(\d+)\s*>/g)].map(x=>+x[1]);
   if(m.length&&Math.max(...m)>refCount){
-    return `提示词引用了 <Picture ${Math.max(...m)}>, 但只上传了 ${refCount} 张参考图`;
+    return t('提示词引用了 <Picture {n}>, 但只上传了 {c} 张参考图',{n:Math.max(...m),c:refCount});
   }
   // <Audio N> (P2) 引用编号不得超过实际音频段数
   const a=[...prompt.matchAll(/<Audio\s+(\d+)\s*>/g)].map(x=>+x[1]);
   if(a.length&&Math.max(...a)>audCount){
-    return `提示词引用了 <Audio ${Math.max(...a)}>, 但只上传了 ${audCount} 段音频`;
+    return t('提示词引用了 <Audio {n}>, 但只上传了 {c} 段音频',{n:Math.max(...a),c:audCount});
   }
   // <Subject N> 应连续从 1 编号 (官方: 禁 <Object x>)
-  if(/<Object\s/i.test(prompt))return '官方语法禁止 <Object x>, 请用 <Subject N> 连续编号';
+  if(/<Object\s/i.test(prompt))return t('官方语法禁止 <Object x>, 请用 <Subject N> 连续编号');
   return null;
 }
 let genTimer;
 async function generate(){
-  if(App.busy)return;if(!App.curWs){showToast('先选工作区','warn');return;}
+  if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
   const prompt=getActivePromptValue().trim();
-  if(!prompt){showToast('先写提示词','warn');return;}
-  if(!haveRefs()){showToast(taskIsR2V()?'先上传参考图（r2v 可多张, 上限 9）':'先上传参考图','warn');return;}
+  if(!prompt){showToast(t('先写提示词'),'warn');return;}
+  if(!haveRefs()){showToast(taskIsR2V()?t('上传参考图（r2v 可多张, 上限 9）'):t('先上传参考图'),'warn');return;}
   // r2v 提交前校验
   if(taskIsR2V()){
     const err=validateR2VPrompt(prompt,App.refsImages.length,App.refsAudios.length);
@@ -976,7 +1036,7 @@ async function generate(){
   if(App.view==='chat')collectPopup();if(App.view==='studio')collectStudioPanel();
   setGenBusy(true);
   const gid='tmp-'+Date.now();const t0=Date.now();
-  const tmp={id:gid,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:[]}:null,status:'running',_pct:0,_phase:'提交中',_t0:t0};
+  const tmp={id:gid,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:[]}:null,status:'running',_pct:0,_phase:t('提交中'),_t0:t0};
   App.gens.unshift(tmp);App.currentGen=tmp;renderActive();
   genTimer=setInterval(()=>{tmp._elapsed=Math.floor((Date.now()-t0)/1000);const e=$('stElapsed');if(e)e.textContent=tmp._elapsed+'s';},500);
   try{
@@ -984,7 +1044,7 @@ async function generate(){
       ? {prompt,params:App.params,refs:{images:App.refsImages,audios:App.refsAudios.map(a=>a.fn)}}
       : {prompt,params:App.params,image:App.uploadedImage};
     const r=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    tmp.job_id=r.job_id;tmp.params.width=r.width;tmp.params.height=r.height;tmp.params.length=r.length;tmp._phase='采样中';
+    tmp.job_id=r.job_id;tmp.params.width=r.width;tmp.params.height=r.height;tmp.params.length=r.length;tmp._phase=t('采样中');
     listenJob(r.job_id,gid);
   }catch(e){tmp.status='error';tmp.error=e.message;tmp.traceback=e.traceback||'';clearInterval(genTimer);renderActive();setGenBusy(false);}
 }
@@ -992,32 +1052,32 @@ function listenJob(jobId,gid){
   const es=new EventSource('/api/jobs/'+jobId+'/events');App.eventSource=es;
   es.onmessage=ev=>{
     const d=JSON.parse(ev.data);const g=App.gens.find(x=>x.id===gid);if(!g)return;
-    if(d.type==='progress'){g._pct=d.max?Math.round(d.value/d.max*100):0;g._step=d.value;g._max=d.max;g._phase='采样中';updateGenProgress(gid,g);}
-    else if(d.type==='status'){g._phase=d.text||'处理中';updateGenProgress(gid,g);}
+    if(d.type==='progress'){g._pct=d.max?Math.round(d.value/d.max*100):0;g._step=d.value;g._max=d.max;g._phase=t('采样中');updateGenProgress(gid,g);}
+    else if(d.type==='status'){g._phase=transStatus(d.text)||t('处理中');updateGenProgress(gid,g);}
     else if(d.type==='done'){es.close();App.eventSource=null;clearInterval(genTimer);
       loadGens().then(()=>{const real=App.gens.find(x=>x.id===d.gen_id)||App.gens[0];if(real)App.currentGen=real;renderActive();});
-      setGenBusy(false);showToast('生成完成','check');
+      setGenBusy(false);showToast(t('生成完成'),'check');
     }
-    else if(d.type==='error'){es.close();App.eventSource=null;clearInterval(genTimer);g.status='error';g.error=d.message;g.traceback=d.traceback||'';renderActive();setGenBusy(false);showToast('生成失败','warn');}
+    else if(d.type==='error'){es.close();App.eventSource=null;clearInterval(genTimer);g.status='error';g.error=d.message;g.traceback=d.traceback||'';renderActive();setGenBusy(false);showToast(t('生成失败'),'warn');}
   };
   es.onerror=()=>{es.close();App.eventSource=null;};
 }
 function updateGenProgress(gid,g){
   if(App.view==='chat'){
     const wrap=document.querySelector(`.progress-wrap[data-gen="${gid}"]`);
-    if(wrap){wrap.querySelector('.progress-fill').style.width=(g._pct||0)+'%';wrap.querySelector('.pct').textContent=g._step&&g._max?`步 ${g._step}/${g._max}`:(g._phase||'');}
+    if(wrap){wrap.querySelector('.progress-fill').style.width=(g._pct||0)+'%';wrap.querySelector('.pct').textContent=g._step&&g._max?t('步 {s} / {m}',{s:g._step,m:g._max}):(g._phase||'');}
   }else if(App.view==='studio'){renderStudioStage(g);}
   else if(App.view==='overview'){
     const card=document.querySelector(`.ov-card[data-gen="${gid}"]`);
-    if(card){const f=card.querySelector('.progress-fill');if(f)f.style.width=(g._pct||0)+'%';const p=card.querySelector('.pct');if(p)p.textContent=g._step&&g._max?`步 ${g._step}/${g._max}`:(g._phase||'');}
+    if(card){const f=card.querySelector('.progress-fill');if(f)f.style.width=(g._pct||0)+'%';const p=card.querySelector('.pct');if(p)p.textContent=g._step&&g._max?t('步 {s} / {m}',{s:g._step,m:g._max}):(g._phase||'');}
   }
 }
 
 // ===== CHAT RENDER =====
 function renderChat(){
   const el=$('chatMsgs');
-  if(!App.curWs){el.innerHTML='<div class="empty"><i class="fas fa-folder-tree"></i><b>选择或新建工作区</b><p>顶栏选择工作区，或点 + 新建。</p></div>';updateGenBtns();return;}
-  if(!App.gens.length){el.innerHTML='<div class="empty"><i class="fas fa-photo-film"></i><b>还没有生成</b><p>上传图、写提示词、点生成。</p></div>';updateGenBtns();return;}
+  if(!App.curWs){el.innerHTML='<div class="empty"><i class="fas fa-folder-tree"></i><b>'+t('选择或新建工作区')+'</b><p>'+t('顶栏选择工作区，或点 + 新建。')+'</p></div>';updateGenBtns();return;}
+  if(!App.gens.length){el.innerHTML='<div class="empty"><i class="fas fa-photo-film"></i><b>'+t('还没有生成')+'</b><p>'+t('上传图、写提示词、点生成。')+'</p></div>';updateGenBtns();return;}
   el.innerHTML='';
   for(const g of [...App.gens].reverse()){
     const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];
@@ -1025,19 +1085,19 @@ function renderChat(){
     const refHtml=(r2v&&refsImgs.length)
       ?`<div class="msg-refs">${refsImgs.map(f=>`<img class="ref-img" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}">`).join('')}${refsCountBadge(refsImgs.length)}${audioRefsBadge(((g.refs&&g.refs.audios)||[]).length)}</div>`
       :(g.image?`<img class="ref-img" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.image)}">`:'');
-    u.innerHTML=`<div class="msg-bubble"><div class="msg-label"><i class="fas fa-user"></i> 提示词</div>
+    u.innerHTML=`<div class="msg-bubble"><div class="msg-label"><i class="fas fa-user"></i> ${t('提示词')}</div>
       <div class="msg-card">${esc(g.prompt)}</div>
       ${refHtml}
       <div class="msg-time">${esc(g.timestamp||'')}</div></div>`;
     el.appendChild(u);
     const b=document.createElement('div');b.className='msg bot';
     let body='';
-    if(g.status==='running'){body=`<div class="progress-wrap" data-gen="${g.id}"><div class="progress-top"><span><span class="spinner" style="display:inline-block;vertical-align:middle;margin-right:5px"></span>${esc(g._phase||'生成中')}</span><span class="pct">${g._step&&g._max?'步 '+g._step+'/'+g._max:'准备'}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${g._pct||0}%"></div></div></div>`;}
-    else if(g.error){body=`<div class="err-box"><i class="fas fa-triangle-exclamation"></i> ${esc(g.error)}${g.traceback?`<details><summary>堆栈</summary><pre>${esc(g.traceback)}</pre></details>`:''}</div>`;}
-    else if(g.video){body=`<video class="gen-video" controls preload="metadata" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.video)}"></video><div class="ok-box"><i class="fas fa-circle-check"></i> 完成 · ${(g.duration||0).toFixed(1)}s</div><div class="chips">${paramsChips(g.params).map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div>
-      <div style="display:flex;gap:5px;margin-top:5px"><button class="btn" style="font-size:11px;padding:4px 8px" onclick="reuseParams(App.gens.find(x=>x.id==='${g.id}'))"><i class="fas fa-rotate"></i> 复用</button>${r2v?'':`<button class="btn primary" style="font-size:11px;padding:4px 8px" onclick="continueFromGen(App.gens.find(x=>x.id==='${g.id}'))"><i class="fas fa-forward"></i> 续写</button>`}<button class="btn" style="font-size:11px;padding:4px 8px" onclick="downloadGen(App.gens.find(x=>x.id==='${g.id}'))"><i class="fas fa-download"></i></button></div>`;}
-    else{body='<div class="err-box">无输出</div>';}
-    b.innerHTML=`<div class="msg-bubble"><div class="msg-label"><i class="fas fa-robot"></i> 生成结果</div><div class="msg-card" style="background:transparent;padding:0">${body}</div></div>`;
+    if(g.status==='running'){body=`<div class="progress-wrap" data-gen="${g.id}"><div class="progress-top"><span><span class="spinner" style="display:inline-block;vertical-align:middle;margin-right:5px"></span>${esc(g._phase||t('生成中'))}</span><span class="pct">${g._step&&g._max?t('步 {s} / {m}',{s:g._step,m:g._max}):t('准备')}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${g._pct||0}%"></div></div></div>`;}
+    else if(g.error){body=`<div class="err-box"><i class="fas fa-triangle-exclamation"></i> ${esc(g.error)}${g.traceback?`<details><summary>${t('堆栈')}</summary><pre>${esc(g.traceback)}</pre></details>`:''}</div>`;}
+    else if(g.video){body=`<video class="gen-video" controls preload="metadata" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.video)}"></video><div class="ok-box"><i class="fas fa-circle-check"></i> ${t('完成 · {s}s',{s:(g.duration||0).toFixed(1)})}</div><div class="chips">${paramsChips(g.params).map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div>
+      <div style="display:flex;gap:5px;margin-top:5px"><button class="btn" style="font-size:11px;padding:4px 8px" onclick="reuseParams(App.gens.find(x=>x.id==='${g.id}'))"><i class="fas fa-rotate"></i> ${t('复用')}</button>${r2v?'':`<button class="btn primary" style="font-size:11px;padding:4px 8px" onclick="continueFromGen(App.gens.find(x=>x.id==='${g.id}'))"><i class="fas fa-forward"></i> ${t('续写')}</button>`}<button class="btn" style="font-size:11px;padding:4px 8px" onclick="downloadGen(App.gens.find(x=>x.id==='${g.id}'))"><i class="fas fa-download"></i></button></div>`;}
+    else{body='<div class="err-box">'+t('无输出')+'</div>';}
+    b.innerHTML=`<div class="msg-bubble"><div class="msg-label"><i class="fas fa-robot"></i> ${t('生成结果')}</div><div class="msg-card" style="background:transparent;padding:0">${body}</div></div>`;
     el.appendChild(b);
   }
   el.scrollTop=el.scrollHeight;updateGenBtns();
@@ -1048,23 +1108,23 @@ function renderOverview(){
   const grid=$('ovGrid');const q=$('ovSearch').value.trim().toLowerCase();const fm=$('ovFilterModel').value;const fr=$('ovFilterRes').value;
   let list=App.gens.filter(g=>{if(q&&!(g.prompt||'').toLowerCase().includes(q))return false;if(fm&&g.params.model!==fm)return false;const res=g.params.width?g.params.width+'×'+g.params.height:'';if(fr&&res!==fr)return false;return true;});
   list.sort((a,b)=>App._sortDesc?(b.timestamp||'').localeCompare(a.timestamp||''):(a.timestamp||'').localeCompare(b.timestamp||''));
-  $('ovCount').textContent=`共 ${list.length} 条`;
+  $('ovCount').textContent=t('共 {n} 条',{n:list.length});
   // refresh res filter
   const reses=[...new Set(App.gens.map(g=>g.params.width?g.params.width+'×'+g.params.height:null).filter(Boolean))];
-  $('ovFilterRes').innerHTML='<option value="">全部分辨率</option>'+reses.map(r=>`<option value="${r}">${r}</option>`).join('');
+  $('ovFilterRes').innerHTML='<option value="">'+t('全部分辨率')+'</option>'+reses.map(r=>`<option value="${r}">${r}</option>`).join('');
   $('ovFilterRes').value=fr;
-  if(!App.curWs){grid.innerHTML='<div class="ov-empty"><i class="fas fa-folder-tree"></i><b>先选工作区</b></div>';return;}
-  if(!list.length){grid.innerHTML='<div class="ov-empty"><i class="fas fa-photo-film"></i><b>没有匹配的生成</b></div>';return;}
+  if(!App.curWs){grid.innerHTML='<div class="ov-empty"><i class="fas fa-folder-tree"></i><b>'+t('先选工作区')+'</b></div>';return;}
+  if(!list.length){grid.innerHTML='<div class="ov-empty"><i class="fas fa-photo-film"></i><b>'+t('没有匹配的生成')+'</b></div>';return;}
   grid.innerHTML='';
   list.forEach((g,i)=>{
     const card=document.createElement('div');card.className='ov-card';card.dataset.gen=g.id;card.style.animationDelay=(Math.min(i,10)*25)+'ms';
     let thumb='';
-    if(g.status==='error'||(g.error&&!g.video)){thumb=`<div class="ph"><i class="fas fa-triangle-exclamation" style="color:var(--error)"></i></div><span class="ov-badge err">失败</span>`;}
-    else if(g.status==='running'){thumb=`<div class="ph"><span class="spinner" style="width:22px;height:22px;border-width:2px"></span></div><span class="ov-badge run">生成中</span><div class="progress-wrap" style="position:absolute;bottom:0;left:0;right:0;padding:4px 8px;background:rgba(0,0,0,.5)"><div class="progress-bar" style="height:3px"><div class="progress-fill" style="width:${g._pct||0}%"></div></div></div>`;}
-    else if(g.video){const r2v=isR2V(g);const model=g.params.model==='full'?'full':(g.params.model==='ref2va'?'ref2va':'pruned');thumb=`<video muted preload="metadata" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.video)}" onloadeddata="try{this.currentTime=0.1}catch(_){}"></video><div class="ov-play"><i class="fas fa-play"></i></div><span class="ov-badge">${model}</span>${r2v?`<span class="ov-badge refs"><i class="fas fa-images"></i> ${((g.refs&&g.refs.images)||[]).length} 图</span>`:''}<span class="ov-badge dur"><i class="fas fa-clock"></i> ${fmtDur(g.params.duration||5)}</span><div class="ov-acts"><button class="play" title="播放"><i class="fas fa-play"></i></button><button class="reuse" title="复用参数"><i class="fas fa-rotate"></i></button>${r2v?'':`<button class="cont" title="续写"><i class="fas fa-forward"></i></button>`}<button class="dl" title="下载"><i class="fas fa-download"></i></button><button class="del" title="删除"><i class="fas fa-trash-alt"></i></button></div>`;}
+    if(g.status==='error'||(g.error&&!g.video)){thumb=`<div class="ph"><i class="fas fa-triangle-exclamation" style="color:var(--error)"></i></div><span class="ov-badge err">${t('失败')}</span>`;}
+    else if(g.status==='running'){thumb=`<div class="ph"><span class="spinner" style="width:22px;height:22px;border-width:2px"></span></div><span class="ov-badge run">${t('生成中')}</span><div class="progress-wrap" style="position:absolute;bottom:0;left:0;right:0;padding:4px 8px;background:rgba(0,0,0,.5)"><div class="progress-bar" style="height:3px"><div class="progress-fill" style="width:${g._pct||0}%"></div></div></div>`;}
+    else if(g.video){const r2v=isR2V(g);const model=g.params.model==='full'?'full':(g.params.model==='ref2va'?'ref2va':'pruned');thumb=`<video muted preload="metadata" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.video)}" onloadeddata="try{this.currentTime=0.1}catch(_){}"></video><div class="ov-play"><i class="fas fa-play"></i></div><span class="ov-badge">${model}</span>${r2v?`<span class="ov-badge refs"><i class="fas fa-images"></i> ${t('{n} 图',{n:((g.refs&&g.refs.images)||[]).length})}</span>`:''}<span class="ov-badge dur"><i class="fas fa-clock"></i> ${fmtDur(g.params.duration||5)}</span><div class="ov-acts"><button class="play" title="${t('播放')}"><i class="fas fa-play"></i></button><button class="reuse" title="${t('复用参数')}"><i class="fas fa-rotate"></i></button>${r2v?'':`<button class="cont" title="${t('续写')}"><i class="fas fa-forward"></i></button>`}<button class="dl" title="${t('下载')}"><i class="fas fa-download"></i></button><button class="del" title="${t('删除')}"><i class="fas fa-trash-alt"></i></button></div>`;}
     else{thumb=`<div class="ph"><i class="fas fa-film"></i></div>`;}
     card.innerHTML=`<div class="ov-thumb">${thumb}</div><div class="ov-body">
-      <div class="ov-prompt" onclick="this.classList.toggle('expanded')">${esc(g.prompt||'(无提示词)')}</div>
+      <div class="ov-prompt" onclick="this.classList.toggle('expanded')">${esc(g.prompt||t('(无提示词)'))}</div>
       <div class="ov-chips">${paramsChips(g.params).map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div>
       <div class="ov-meta">${relTime(g.timestamp)}${g.duration?` · ${g.duration.toFixed(0)}s`:''}</div></div>`;
     if(g.video){card.querySelector('.ov-thumb').onclick=()=>openLightbox(g);card.querySelector('.ov-acts .play').onclick=e=>{e.stopPropagation();openLightbox(g);};card.querySelector('.ov-acts .reuse').onclick=e=>{e.stopPropagation();reuseParams(g);};const cc=card.querySelector('.ov-acts .cont');if(cc)cc.onclick=e=>{e.stopPropagation();continueFromGen(g);};card.querySelector('.ov-acts .dl').onclick=e=>{e.stopPropagation();downloadGen(g);};card.querySelector('.ov-acts .del').onclick=e=>{e.stopPropagation();deleteGen(g);};}
@@ -1074,11 +1134,11 @@ function renderOverview(){
 $('ovSearch').oninput=renderOverview;
 $('ovFilterModel').onchange=renderOverview;
 $('ovFilterRes').onchange=renderOverview;
-$('ovSort').onclick=()=>{App._sortDesc=!App._sortDesc;$('ovSortLabel').textContent=App._sortDesc?'最新':'最早';renderOverview();};
+$('ovSort').onclick=()=>{App._sortDesc=!App._sortDesc;$('ovSortLabel').textContent=App._sortDesc?t('最新'):t('最早');renderOverview();};
 
 // ===== STUDIO RENDER =====
 function renderStudio(){renderStudioLeft();if(App.currentGen)renderStudioStage(App.currentGen);else renderStudioEmpty();}
-function renderStudioEmpty(){$('stStage').innerHTML='<div class="st-stage-empty"><i class="fas fa-photo-film"></i><b>准备开始生成</b><p>右侧上传参考图、填写提示词、调整参数，然后点「生成」。</p></div>';}
+function renderStudioEmpty(){$('stStage').innerHTML='<div class="st-stage-empty"><i class="fas fa-photo-film"></i><b>'+t('准备开始生成')+'</b><p>'+t('右侧上传参考图、填写提示词、调整参数，然后点「生成」。')+'</p></div>';}
 
 // ---- Studio 左栏: 分块渲染 + 缩略图懒加载 (避免大量历史一次性创建所有 video) ----
 const ST_BATCH=40;                 // 每批渲染条数
@@ -1090,7 +1150,7 @@ function renderStudioLeft(){
   const el=$('stList');const q=$('stSearch').value.trim().toLowerCase();
   stFiltered=App.gens.filter(g=>!q||(g.prompt||'').toLowerCase().includes(q));
   $('stCount').textContent=stFiltered.length;
-  if(!stFiltered.length){el.innerHTML='<div style="color:var(--text-dim);font-size:11px;padding:16px;text-align:center">暂无</div>';return;}
+  if(!stFiltered.length){el.innerHTML='<div style="color:var(--text-dim);font-size:11px;padding:16px;text-align:center">'+t('暂无')+'</div>';return;}
   el.innerHTML='';
   stRendered=0;
   renderStudioBatch();
@@ -1112,8 +1172,8 @@ function buildStudioItem(g,el){
   else if(g.video)thumb=`<video muted preload="none" data-src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.video)}"></video>`;
   else if(g.status==='running')thumb='<div class="ph"><span class="spinner" style="width:12px;height:12px;border-width:1.5px"></span></div>';
   else thumb='<div class="ph"><i class="fas fa-film"></i></div>';
-  const model=g.params.model==='full'?'full':(g.params.model==='ref2va'?'ref2va':'pruned');const res=(g.params.width&&g.params.height)?g.params.width+'×'+g.params.height:'原生';
-  d.innerHTML=`<div class="st-thumb">${thumb}</div><div class="st-body"><div class="st-prompt">${esc(g.prompt||'')}</div><div class="st-meta"><span class="m ${model==='full'?'full':''}">${model}</span><span>${res}</span><span>${g.params.steps}步</span><span>${fmtDur(g.params.duration||5)}</span>${r2v?`<span class="m">×${refN}图</span>`:''}</div></div><button class="st-reuse" title="复用"><i class="fas fa-rotate"></i></button>${r2v?'':`<button class="st-cont" title="续写"><i class="fas fa-forward"></i></button>`}`;
+  const model=g.params.model==='full'?'full':(g.params.model==='ref2va'?'ref2va':'pruned');const res=(g.params.width&&g.params.height)?g.params.width+'×'+g.params.height:t('原生');
+  d.innerHTML=`<div class="st-thumb">${thumb}</div><div class="st-body"><div class="st-prompt">${esc(g.prompt||'')}</div><div class="st-meta"><span class="m ${model==='full'?'full':''}">${model}</span><span>${res}</span><span>${t('{n} 步',{n:g.params.steps})}</span><span>${fmtDur(g.params.duration||5)}</span>${r2v?`<span class="m">${t('×{n}图',{n:refN})}</span>`:''}</div></div><button class="st-reuse" title="${t('复用')}"><i class="fas fa-rotate"></i></button>${r2v?'':`<button class="st-cont" title="${t('续写')}"><i class="fas fa-forward"></i></button>`}`;
   d.onclick=()=>{
     // 只切 active 高亮 + 刷舞台, 不重建列表 (避免视频缩略图全部销毁重载)
     if(App.currentGen&&App.currentGen.id===g.id)return;
@@ -1149,13 +1209,13 @@ function renderStudioStage(g){
   if(g.status==='running'){
     const pct=g._pct||0;const R=63,C=2*Math.PI*R,off=C*(1-pct/100);
     el.innerHTML=`<div class="st-run"><div class="prog-ring"><svg width="140" height="140"><circle class="track" cx="70" cy="70" r="${R}"/><circle class="fill" cx="70" cy="70" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${off}"/></svg><div class="pct"><b>${pct}</b><span>%</span></div></div>
-      <div class="phase-info"><div class="pl"><span class="spinner"></span> ${esc(g._phase||'生成中')}</div><div class="ps">${g._step&&g._max?'步 '+g._step+' / '+g._max:''}</div></div>
+      <div class="phase-info"><div class="pl"><span class="spinner"></span> ${esc(g._phase||t('生成中'))}</div><div class="ps">${g._step&&g._max?t('步 {s} / {m}',{s:g._step,m:g._max}):''}</div></div>
       <div class="prog-wide"><div class="fill" style="width:${pct}%"></div></div>
-      <div class="timer"><span><i class="far fa-clock"></i> 已用 <b id="stElapsed">${g._elapsed||0}s</b></span></div></div>`;
+      <div class="timer"><span><i class="far fa-clock"></i> ${t('已用')} <b id="stElapsed">${g._elapsed||0}s</b></span></div></div>`;
     return;
   }
   if(g.status==='error'||(g.error&&!g.video)){
-    el.innerHTML=`<div class="st-error"><div class="err-card"><i class="fas fa-triangle-exclamation"></i><span class="err-msg">${esc(g.error||'未知错误')}</span>${g.traceback?`<details style="margin-top:10px"><summary style="cursor:pointer;font-size:11px;color:var(--text-sec)">堆栈</summary><pre style="margin-top:6px;font-size:10px;white-space:pre-wrap;max-height:220px;overflow:auto;color:var(--text-sec);background:rgba(0,0,0,.2);padding:8px;border-radius:6px">${esc(g.traceback)}</pre></details>`:''}</div><button class="btn" onclick="reuseParams(App.currentGen)"><i class="fas fa-rotate"></i> 复用参数重试</button></div>`;
+    el.innerHTML=`<div class="st-error"><div class="err-card"><i class="fas fa-triangle-exclamation"></i><span class="err-msg">${esc(g.error||t('未知错误'))}</span>${g.traceback?`<details style="margin-top:10px"><summary style="cursor:pointer;font-size:11px;color:var(--text-sec)">${t('堆栈')}</summary><pre style="margin-top:6px;font-size:10px;white-space:pre-wrap;max-height:220px;overflow:auto;color:var(--text-sec);background:rgba(0,0,0,.2);padding:8px;border-radius:6px">${esc(g.traceback)}</pre></details>`:''}</div><button class="btn" onclick="reuseParams(App.currentGen)"><i class="fas fa-rotate"></i> ${t('复用参数重试')}</button></div>`;
     return;
   }
   if(g.video){
@@ -1163,8 +1223,8 @@ function renderStudioStage(g){
     const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];
     const refStrip=(r2v&&refsImgs.length)?`<div class="si-refs">${refsImgs.map(f=>`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}">`).join('')}${refsCountBadge(refsImgs.length)}${audioRefsBadge(((g.refs&&g.refs.audios)||[]).length)}</div>`:'';
     el.innerHTML=`<div class="st-done"><div class="st-video-wrap"><video controls autoplay src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.video)}"></video><button class="st-expand" onclick="openLightbox(App.currentGen)"><i class="fas fa-expand"></i></button></div>
-      <div class="st-info"><div class="si-prompt">${esc(g.prompt||'')}</div>${refStrip}<div class="si-chips">${chips.map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div><div class="si-meta"><span><i class="far fa-clock"></i> ${relTime(g.timestamp)}</span>${g.duration?`<span>耗时 ${g.duration.toFixed(1)}s</span>`:''}<span>${g.params.length||'-'}帧</span><span style="font-family:monospace">#${esc(g.id)}</span></div></div>
-      <div class="st-actions"><button class="btn" onclick="reuseParams(App.currentGen)"><i class="fas fa-rotate"></i> 复用</button>${r2v?'':`<button class="btn primary" onclick="continueFromGen(App.currentGen)"><i class="fas fa-forward"></i> 续写</button>`}<button class="btn" onclick="downloadGen(App.currentGen)"><i class="fas fa-download"></i> 下载</button><button class="btn danger" onclick="deleteGen(App.currentGen)"><i class="fas fa-trash-alt"></i> 删除</button></div></div>`;
+      <div class="st-info"><div class="si-prompt">${esc(g.prompt||'')}</div>${refStrip}<div class="si-chips">${chips.map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div><div class="si-meta"><span><i class="far fa-clock"></i> ${relTime(g.timestamp)}</span>${g.duration?`<span>${t('耗时')} ${g.duration.toFixed(1)}s</span>`:''}<span>${t('{n} 帧',{n:g.params.length||'-'})}</span><span style="font-family:monospace">#${esc(g.id)}</span></div></div>
+      <div class="st-actions"><button class="btn" onclick="reuseParams(App.currentGen)"><i class="fas fa-rotate"></i> ${t('复用')}</button>${r2v?'':`<button class="btn primary" onclick="continueFromGen(App.currentGen)"><i class="fas fa-forward"></i> ${t('续写')}</button>`}<button class="btn" onclick="downloadGen(App.currentGen)"><i class="fas fa-download"></i> ${t('下载')}</button><button class="btn danger" onclick="deleteGen(App.currentGen)"><i class="fas fa-trash-alt"></i> ${t('删除')}</button></div></div>`;
   }else{renderStudioEmpty();}
 }
 $('stSearch').oninput=renderStudioLeft;
@@ -1188,7 +1248,7 @@ function reuseParams(g, opts={}){
     App.uploadedImage=(opts.image)||g.image||null;
   }
   syncTaskUI();syncPopup();syncStudioPanel();syncImgUIs();renderRefGrid();renderRefAudios();setChatPrompt(App.prompt);setStudioPrompt(App.prompt);
-  updateGenBtns();updateResPreviews();showToast(opts.toast||(r2v?'已复用 r2v 参数与素材':'参数已复用'),'check');
+  updateGenBtns();updateResPreviews();showToast(opts.toast||(r2v?t('已复用 r2v 参数与素材'):t('参数已复用')),'check');
   // 切到 Studio 视图方便继续编辑
   if(opts.switchView||r2v)switchView('studio');
 }
@@ -1204,22 +1264,22 @@ async function probeAudioDurations(){
 }
 // 续写: 从视频最后一帧截取, 设为参考图 + 复用参数 (仅 i2v; r2v 无 first_frame 语义)
 async function continueFromGen(g){
-  if(!g||!g.video){showToast('无视频','warn');return;}
-  if(isR2V(g)){showToast('r2v 暂不支持续写（无首帧语义）','warn');return;}
-  showToast('正在截取最后一帧…','check');
+  if(!g||!g.video){showToast(t('无视频'),'warn');return;}
+  if(isR2V(g)){showToast(t('r2v 暂不支持续写（无首帧语义）'),'warn');return;}
+  showToast(t('正在截取最后一帧…'),'check');
   try{
     const r=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/extract-frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({video:g.video,position:'last'})});
-    reuseParams(g,{image:r.filename,toast:'已截取最后一帧并复用参数',switchView:true});
-  }catch(e){showToast('截帧失败: '+e.message,'warn');}
+    reuseParams(g,{image:r.filename,toast:t('已截取最后一帧并复用参数'),switchView:true});
+  }catch(e){showToast(t('截帧失败: ')+e.message,'warn');}
 }
 async function downloadGen(g){
-  if(!g||!g.video){showToast('无视频','warn');return;}
+  if(!g||!g.video){showToast(t('无视频'),'warn');return;}
   const a=document.createElement('a');a.href='/api/workspaces/'+encodeURIComponent(App.curWs)+'/media/'+encodeURIComponent(g.video);
-  a.download=`H3_${g.params.model}_${g.params.steps}step_${g.params.width}x${g.params.height}_${g.id}.mp4`;document.body.appendChild(a);a.click();a.remove();showToast('开始下载','check');
+  a.download=`H3_${g.params.model}_${g.params.steps}step_${g.params.width}x${g.params.height}_${g.id}.mp4`;document.body.appendChild(a);a.click();a.remove();showToast(t('开始下载'),'check');
 }
 async function deleteGen(g){
-  if(!g)return;if(!confirm('删除？\n'+(g.prompt||'').slice(0,40)+'…'))return;
-  try{await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/generations/'+encodeURIComponent(g.id),{method:'DELETE'});showToast('已删除','check');}catch(e){showToast('删除失败','warn');}
+  if(!g)return;if(!confirm(t('删除？\n')+(g.prompt||'').slice(0,40)+'…'))return;
+  try{await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/generations/'+encodeURIComponent(g.id),{method:'DELETE'});showToast(t('已删除'),'check');}catch(e){showToast(t('删除失败'),'warn');}
   App.currentGen=null;await loadGens();
 }
 
@@ -1230,12 +1290,12 @@ function openLightbox(g){
   const chips=paramsChips(g.params);
   const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];
   let refHtml='';
-  if(r2v&&refsImgs.length){refHtml=`<h4>参考素材 (${refsImgs.length})</h4><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">${refsImgs.map(f=>`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}" style="width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--border)">`).join('')}</div>`;}
-  else if(g.image){refHtml=`<h4>参考图</h4><img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.image)}" style="width:100%;border-radius:8px;margin-bottom:12px;border:1px solid var(--border)">`;}
-  $('lbDetail').innerHTML=`<h4>提示词</h4><div class="lb-prompt">${esc(g.prompt||'')}</div>
+  if(r2v&&refsImgs.length){refHtml=`<h4>${t('参考素材 ({n})',{n:refsImgs.length})}</h4><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">${refsImgs.map(f=>`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}" style="width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--border)">`).join('')}</div>`;}
+  else if(g.image){refHtml=`<h4>${t('参考图')}</h4><img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.image)}" style="width:100%;border-radius:8px;margin-bottom:12px;border:1px solid var(--border)">`;}
+  $('lbDetail').innerHTML=`<h4>${t('提示词')}</h4><div class="lb-prompt">${esc(g.prompt||'')}</div>
     ${refHtml}
-    <h4>参数</h4><div class="lb-chips">${chips.map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div>
-    <h4>详情</h4><div class="lb-row"><span>耗时</span><span>${g.duration?g.duration.toFixed(1)+'s':'-'}</span></div><div class="lb-row"><span>帧数</span><span>${g.params.length||'-'}</span></div><div class="lb-row"><span>时间</span><span>${esc(g.timestamp||'-')}</span></div><div class="lb-row"><span>ID</span><span style="font-family:monospace">${esc(g.id)}</span></div>`;
+    <h4>${t('参数')}</h4><div class="lb-chips">${chips.map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div>
+    <h4>${t('详情')}</h4><div class="lb-row"><span>${t('耗时')}</span><span>${g.duration?g.duration.toFixed(1)+'s':'-'}</span></div><div class="lb-row"><span>${t('帧数')}</span><span>${g.params.length||'-'}</span></div><div class="lb-row"><span>${t('时间')}</span><span>${esc(g.timestamp||'-')}</span></div><div class="lb-row"><span>ID</span><span style="font-family:monospace">${esc(g.id)}</span></div>`;
   $('lightbox').classList.add('show');
 }
 function closeLightbox(){$('lightbox').classList.remove('show');const v=$('lbVideo');v.pause();v.src='';}
@@ -1252,14 +1312,22 @@ function showToast(msg,icon){
   $('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2200);
 }
 
-// ===== Ref2VA 提示词指南内容 =====
-const R2V_GUIDE_HTML=`<button class="btn g-btn" onclick="insertSixSkeleton()"><i class="fas fa-wand-magic-sparkles"></i> 插入官方六段式骨架</button>
+// ===== Ref2VA 提示词指南内容 (zh/en 双份纯文本常量) =====
+const R2V_GUIDE_ZH=`<button class="btn g-btn" onclick="insertSixSkeleton()"><i class="fas fa-wand-magic-sparkles"></i> 插入官方六段式骨架</button>
 <code>引用语法</code> 图片按上传顺序编号：<code>&lt;Picture 1&gt;</code>…<code>&lt;Picture 9&gt;</code>（提示词中可多次引用同一张）。主体（人/物）必须用 <code>&lt;Subject N&gt;</code> 定义并<b>从 1 连续编号</b>；<b>禁止</b> <code>&lt;Object x&gt;</code>。
 <code>身份保持句式</code>：<code>&lt;Subject 1&gt; is the person in &lt;Picture 1&gt;, preserving the same facial identity, outfit and colors.</code>
 <code>音频参考</code>（P2）：音频按上传顺序用 <code>&lt;Audio N&gt;</code> 引用（≤3 段, 每段 2–15s, 总 ≤15s）；音色句式 <code>&lt;Audio 1&gt; is the voice-timbre reference for &lt;Subject 1&gt; (S1)</code>，注明参考音色、不复制原话。
 <code>说话人</code>（P2+ 音频参考用）：<code>(S1)</code> 标注说话主体；台词原文用 <code>&lt;d&gt;[Chinese] 台词原文&lt;/d&gt;</code>，<b>对白不翻译</b>。
 <code>总长限制</code>：提示词 ≤4000 字符；音频参考每段 2–15s、≤3 段、总时长 ≤15s。
 <code>官方六段式</code>：subject_definitions / summary / retention_analysis / detailed_description / overall_soundscape / non_diegetic_music`;
+const R2V_GUIDE_EN=`<button class="btn g-btn" onclick="insertSixSkeleton()"><i class="fas fa-wand-magic-sparkles"></i> Insert official six-section skeleton</button>
+<code>Reference syntax</code> Images are numbered by upload order: <code>&lt;Picture 1&gt;</code>…<code>&lt;Picture 9&gt;</code> (the same image may be referenced multiple times). Subjects (people/objects) must be defined with <code>&lt;Subject N&gt;</code>, numbered <b>consecutively from 1</b>; <b>do not use</b> <code>&lt;Object x&gt;</code>.
+<code>Identity sentence</code>: <code>&lt;Subject 1&gt; is the person in &lt;Picture 1&gt;, preserving the same facial identity, outfit and colors.</code>
+<code>Audio references</code> (P2): audios are referenced by upload order as <code>&lt;Audio N&gt;</code> (≤3 clips, 2–15s each, ≤15s total); voice-timbre sentence: <code>&lt;Audio 1&gt; is the voice-timbre reference for &lt;Subject 1&gt; (S1)</code> — state the timbre reference, do not copy the original wording.
+<code>Speaker</code> (for P2+ audio refs): <code>(S1)</code> marks who speaks; put the original line in <code>&lt;d&gt;[Chinese] 台词原文&lt;/d&gt;</code>, <b>never translate dialogue</b>.
+<code>Length limits</code>: prompt ≤4000 chars; audio refs 2–15s each, ≤3 clips, ≤15s total.
+<code>Official six sections</code>: subject_definitions / summary / retention_analysis / detailed_description / overall_soundscape / non_diegetic_music`;
+function guideHtml(){return langIsZh()?R2V_GUIDE_ZH:R2V_GUIDE_EN;}
 
 // ===== COMPOSER (r2v 提示词编辑器 · 方案 B) =====
 const R2V_SECTIONS=['subject_definitions','summary','retention_analysis','detailed_description','overall_soundscape','non_diegetic_music'];
@@ -1368,13 +1436,13 @@ function insertSixSkeleton(){
   const next=replaceSixBlock(cur,sixSkeletonFor(n));
   if(inC){applyComposerText(next);const ta=$('cPrompt');ta.focus();}
   else{App.prompt=next;if(App.view==='studio')setStudioPrompt(next);else setChatPrompt(next);updateGenBtns();}
-  showToast(`已按当前 ${n} 张参考图生成/替换六段式骨架`,'check');
+  showToast(t('已按当前 {n} 张参考图生成/替换六段式骨架',{n}),'check');
 }
 // --- composer 状态/开关 ---
 function composerOpen(){return $('composer').classList.contains('show');}
 function promptTextarea(){return composerOpen()?$('cPrompt'):(App.view==='studio'?$('stPrompt'):$('chatPrompt'));}
 function openComposer(){
-  if(!taskIsR2V()){showToast('仅 r2v 模式可用','warn');return;}
+  if(!taskIsR2V()){showToast(t('仅 r2v 模式可用'),'warn');return;}
   const v=getActivePromptValue();
   $('cPrompt').value=v;
   renderComposerTools();renderComposerSide();
@@ -1398,7 +1466,7 @@ function applyDraft(){
   App.r2vDraft=v;App.prompt=v;
   if(App.view==='studio')setStudioPrompt(v);else setChatPrompt(v);
   updateGenBtns();closeComposer();
-  showToast('草稿已暂存：可去添加素材/调整参数，再点「全屏编写」回来继续','check');
+  showToast(t('草稿已暂存：可去添加素材/调整参数，再点「全屏编写」回来继续'),'check');
 }
 function syncComposerState(){
   const ta=$('cPrompt');if(!ta)return;
@@ -1410,7 +1478,7 @@ function syncComposerMeta(){
   const ta=$('cPrompt');if(!ta)return;
   const n=ta.value.length;
   const cc=$('cCount');cc.textContent=n+' / 4000';cc.className='c-count'+(n>4000?' over':(n>3500?' warn':''));
-  $('cRefSummary').textContent=App.curWs?`已上传 ${App.refsImages.length}/9 张参考图`:'未选工作区';
+  $('cRefSummary').textContent=App.curWs?t('已上传 {a}/9 张参考图',{a:App.refsImages.length}):t('未选工作区');
   renderIssues();
 }
 function refreshComposerRefs(){if(!composerOpen())return;renderComposerTools();renderComposerSide();syncComposerMeta();}
@@ -1440,7 +1508,7 @@ function buildSplit(){
   const box=$('cSplit');if(!box)return;
   const p=parsePromptSections($('cPrompt').value);
   cPre=p.pre;cPost='';
-  const ph={subject_definitions:'把每张图指派给主体, 例: <Picture 1> is the reference for <Subject 1>.',summary:'一句话概括本段剧情。',retention_analysis:'必须保留的身份/服饰/细节。',detailed_description:'[Shot 1] 动作、机位、运镜; 无字幕水印。',overall_soundscape:'环境音。',non_diegetic_music:'配乐, 无则 N/A。'};
+  const ph={subject_definitions:langIsZh()?'把每张图指派给主体, 例: <Picture 1> is the reference for <Subject 1>.':'Assign each image to a subject, e.g. <Picture 1> is the reference for <Subject 1>.',summary:langIsZh()?'一句话概括本段剧情。':'One sentence summarizing the story.',retention_analysis:langIsZh()?'必须保留的身份/服饰/细节。':'Identity / outfit / details that must be preserved.',detailed_description:langIsZh()?'[Shot 1] 动作、机位、运镜; 无字幕水印。':'[Shot 1] Action, camera, moves; no text or watermarks.',overall_soundscape:langIsZh()?'环境音。':'Ambience.',non_diegetic_music:langIsZh()?'配乐, 无则 N/A。':'Music, or N/A if none.'};
   box.innerHTML=R2V_SECTIONS.map(s=>`<div class="c-sec" data-sec="${s}"><div class="c-sec-head"><code>${s}</code><span class="cnt"></span></div><textarea data-sec="${s}" spellcheck="false" placeholder="${esc(ph[s]||'')}"></textarea></div>`).join('');
   R2V_SECTIONS.forEach(s=>{const ta=box.querySelector(`textarea[data-sec="${s}"]`);if(ta)ta.value=p.secs[s];});
   updateSecCounts();
@@ -1449,7 +1517,7 @@ function updateSecCounts(){
   const box=$('cSplit');if(!box)return;
   box.querySelectorAll('.c-sec').forEach(sec=>{
     const ta=sec.querySelector('textarea'),c=sec.querySelector('.cnt');
-    if(ta&&c)c.textContent=ta.value.length+'字';
+    if(ta&&c)c.textContent=t('{n} 字',{n:ta.value.length});
   });
 }
 function joinPromptText(){
@@ -1520,17 +1588,17 @@ function syncMirror(){
 // --- composer 左右栏渲染 ---
 function renderComposerTools(){
   const box=$('cTools');if(!box)return;
-  let h='<span class="c-tools-label">快速插入</span>';
+  let h='<span class="c-tools-label">'+t('快速插入')+'</span>';
   if(App.refsImages.length){
-    h+='<span class="c-tools-label" style="margin-left:4px">引用:</span>';
+    h+='<span class="c-tools-label" style="margin-left:4px">'+t('引用:')+'</span>';
     App.refsImages.forEach((_,i)=>h+=`<button class="c-token" data-pic="${i+1}" title="${esc('<Picture '+(i+1)+'>')}">${esc('<Picture '+(i+1)+'>')}</button>`);
   }
   if(App.refsAudios.length){
-    h+='<span class="c-tools-label" style="margin-left:4px">音频:</span>';
-    App.refsAudios.forEach((_,i)=>h+=`<button class="c-token" data-aud="${i+1}" title="${esc('<Audio '+(i+1)+'> 音色参考')}">${esc('<Audio '+(i+1)+'>')}</button>`);
+    h+='<span class="c-tools-label" style="margin-left:4px">'+t('音频:')+'</span>';
+    App.refsAudios.forEach((_,i)=>h+=`<button class="c-token" data-aud="${i+1}" title="${esc(t('<Audio {n}> 音色参考',{n:i+1}))}">${esc('<Audio '+(i+1)+'>')}</button>`);
   }
-  h+='<span class="c-tools-label" style="margin-left:4px">语法:</span>';
-  R2V_TOKENS.forEach(tk=>h+=`<button class="c-token" data-t="${esc(tk.t)}" title="${esc(tk.tip)}">${esc(tk.t)}</button>`);
+  h+='<span class="c-tools-label" style="margin-left:4px">'+t('语法:')+'</span>';
+  R2V_TOKENS.forEach(tk=>h+=`<button class="c-token" data-t="${esc(tk.t)}" title="${esc(t(tk.tip))}">${esc(tk.t)}</button>`);
   box.innerHTML=h;
   box.querySelectorAll('.c-token[data-pic]').forEach(b=>b.onclick=()=>insToken('<Picture '+b.dataset.pic+'>'));
   box.querySelectorAll('.c-token[data-aud]').forEach(b=>b.onclick=()=>insToken('<Audio '+b.dataset.aud+'>'));
@@ -1540,46 +1608,46 @@ function renderComposerSide(){
   const side=$('cSide');if(!side)return;
   let h='';
   // 素材引用
-  h+='<div class="c-card"><h4><i class="fas fa-images"></i> 素材引用（点击缩略图插入引用）</h4>';
+  h+='<div class="c-card"><h4><i class="fas fa-images"></i> '+t('素材引用（点击缩略图插入引用）')+'</h4>';
   if(App.refsImages.length&&App.curWs){
     h+='<div class="c-pics">'+App.refsImages.map((fn,i)=>`<button class="c-pic" data-i="${i}" title="${esc('<Picture '+(i+1)+'>')}"><img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(fn)}"><span>&lt;Picture ${i+1}&gt;</span></button>`).join('')+'</div>';
-    h+='<p style="margin-top:6px">同一人的多张角度图都指向同一个 <code>&lt;Subject N&gt;</code>（例 1 演示）。删图请回 Studio 面板素材格。</p>';
+    h+='<p style="margin-top:6px">'+t('同一人的多张角度图都指向同一个 <code>&lt;Subject N&gt;</code>（例 1 演示）。删图请回 Studio 面板素材格。')+'</p>';
   }else{
-    h+='<p>还没有参考图——直接点下方「添加素材」上传（1–9 张，按序编号），或在 Studio 面板传好后这里自动出现。</p>';
+    h+='<p>'+t('还没有参考图——直接点下方「添加素材」上传（1–9 张，按序编号），或在 Studio 面板传好后这里自动出现。')+'</p>';
   }
-  if(App.refsImages.length<R2V_MAX_IMAGES)h+='<button class="btn" id="cAddMedia" style="margin-top:7px"><i class="fas fa-plus"></i> 添加素材（可多选，追加到末尾）</button>';
+  if(App.refsImages.length<R2V_MAX_IMAGES)h+='<button class="btn" id="cAddMedia" style="margin-top:7px"><i class="fas fa-plus"></i> '+t('添加素材（可多选，追加到末尾）')+'</button>';
   if(App.refsAudios.length){
-    h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">'+App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><button class="r2v-aud-del c" data-i="${i}" title="删除"><i class="fas fa-xmark"></i></button></div>`).join('')+'</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">'+App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><button class="r2v-aud-del c" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('')+'</div>';
   }
-  if(App.refsAudios.length<R2V_MAX_AUDIOS)h+='<button class="btn" id="cAudAdd" style="margin-top:6px"><i class="fas fa-microphone"></i> 添加参考音频（≤3 段, 2–15s/段）</button>';
+  if(App.refsAudios.length<R2V_MAX_AUDIOS)h+='<button class="btn" id="cAudAdd" style="margin-top:6px"><i class="fas fa-microphone"></i> '+t('添加参考音频（≤3 段, 2–15s/段）')+'</button>';
   h+='</div>';
   // 语法速查
-  h+='<div class="c-card"><h4><i class="fas fa-book"></i> 官方语法速查</h4><ul>'
-    +'<li>图引用：<code>&lt;Picture N&gt;</code>，按上传顺序编号，可多次引用同一张</li>'
-    +'<li>主体定义：<code>&lt;Subject N&gt;</code> 从 1 起<b>连续编号</b>；<b style="color:var(--error)">禁止 &lt;Object x&gt;</b></li>'
-    +'<li>说话人：<code>(S1)</code> 挂在主体后（P2 音频参考）</li>'
-    +'<li>台词：<code>&lt;d&gt;[Chinese] 原文&lt;/d&gt;</code>，对白<b>不翻译</b></li>'
-    +'<li>总长度 ≤ 4000 字符</li></ul></div>';
+  h+='<div class="c-card"><h4><i class="fas fa-book"></i> '+t('官方语法速查')+'</h4><ul>'
+    +'<li>'+t('图引用：<code>&lt;Picture N&gt;</code>，按上传顺序编号，可多次引用同一张')+'</li>'
+    +'<li>'+t('主体定义：<code>&lt;Subject N&gt;</code> 从 1 起<b>连续编号</b>；<b style="color:var(--error)">禁止 &lt;Object x&gt;</b>')+'</li>'
+    +'<li>'+t('说话人：<code>(S1)</code> 挂在主体后（P2 音频参考）')+'</li>'
+    +'<li>'+t('台词：<code>&lt;d&gt;[Chinese] 原文&lt;/d&gt;</code>，对白<b>不翻译</b>')+'</li>'
+    +'<li>'+t('总长度 ≤ 4000 字符')+'</li></ul></div>';
   // 六段结构
-  h+='<div class="c-card"><h4><i class="fas fa-list-ol"></i> 官方六段式</h4><ul>'
-    +'<li><code>subject_definitions</code> — 把每张图指派给主体</li>'
-    +'<li><code>summary</code> — 一句话剧情</li>'
-    +'<li><code>retention_analysis</code> — 必须保留的身份/服饰/细节</li>'
-    +'<li><code>detailed_description</code> — 动作·机位·运镜（主体发挥区）</li>'
-    +'<li><code>overall_soundscape</code> — 环境音</li>'
-    +'<li><code>non_diegetic_music</code> — 配乐，无则 N/A</li></ul>'
-    +`<button class="btn" onclick="insertSixSkeleton()"><i class="fas fa-wand-magic-sparkles"></i> 按当前 ${App.refsImages.length||0} 张图生成骨架</button></div>`;
+  h+='<div class="c-card"><h4><i class="fas fa-list-ol"></i> '+t('官方六段式')+'</h4><ul>'
+    +'<li><code>subject_definitions</code> '+t('— 把每张图指派给主体')+'</li>'
+    +'<li><code>summary</code> '+t('— 一句话剧情')+'</li>'
+    +'<li><code>retention_analysis</code> '+t('— 必须保留的身份/服饰/细节')+'</li>'
+    +'<li><code>detailed_description</code> '+t('— 动作·机位·运镜（主体发挥区）')+'</li>'
+    +'<li><code>overall_soundscape</code> '+t('— 环境音')+'</li>'
+    +'<li><code>non_diegetic_music</code> '+t('— 配乐，无则 N/A')+'</li></ul>'
+    +`<button class="btn" onclick="insertSixSkeleton()"><i class="fas fa-wand-magic-sparkles"></i> ${t('按当前 {n} 张图生成骨架',{n:App.refsImages.length||0})}</button></div>`;
   // 示例库
-  h+='<div class="c-card"><h4><i class="fas fa-lightbulb"></i> 示例库（载入即用）</h4>';
-  R2V_EXAMPLES.forEach((ex,i)=>h+=`<div class="c-ex-item"><div class="c-ex-head">${esc(ex.name)}<span class="need">需 ${ex.need} 图</span></div><button class="btn" onclick="loadExample(${i})">载入示例</button></div>`);
+  h+='<div class="c-card"><h4><i class="fas fa-lightbulb"></i> '+t('示例库（载入即用）')+'</h4>';
+  R2V_EXAMPLES.forEach((ex,i)=>h+=`<div class="c-ex-item"><div class="c-ex-head">${esc(t(ex.name))}<span class="need">${t('需 {n} 图',{n:ex.need})}</span></div><button class="btn" onclick="loadExample(${i})">${t('载入示例')}</button></div>`);
   h+='</div>';
   // 红线
-  h+='<div class="c-card"><h4><i class="fas fa-triangle-exclamation"></i> 红线速查</h4><ul>'
-    +'<li><code>&lt;Picture N&gt;</code> 最大编号 ≤ 已传图数</li>'
-    +'<li>主体编号从 1 连续，禁止跳号</li>'
-    +'<li>禁止 <code>&lt;Object x&gt;</code></li>'
-    +'<li>对白原文进 <code>&lt;d&gt;</code>，别翻译</li>'
-    +'<li>无 native 分辨率：画布 = 自定义尺寸</li></ul></div>';
+  h+='<div class="c-card"><h4><i class="fas fa-triangle-exclamation"></i> '+t('红线速查')+'</h4><ul>'
+    +'<li>'+t('<code>&lt;Picture N&gt;</code> 最大编号 ≤ 已传图数')+'</li>'
+    +'<li>'+t('主体编号从 1 连续，禁止跳号')+'</li>'
+    +'<li>'+t('禁止 <code>&lt;Object x&gt;</code>')+'</li>'
+    +'<li>'+t('对白原文进 <code>&lt;d&gt;</code>，别翻译')+'</li>'
+    +'<li>'+t('无 native 分辨率：画布 = 自定义尺寸')+'</li></ul></div>';
   side.innerHTML=h;
   side.querySelectorAll('.c-pic').forEach(b=>b.onclick=()=>insToken('<Picture '+(+b.dataset.i+1)+'>'));
   const am=$('cAddMedia');if(am)am.onclick=()=>$('cRefFiles').click();
@@ -1591,19 +1659,19 @@ function loadExample(i){
   applyComposerText(ex.text);
   const ta=$('cPrompt');ta.focus();
   const miss=ex.need-App.refsImages.length;
-  showToast(miss>0?`已载入示例「${ex.name}」，还需 ${miss} 张参考图`:'已载入示例「'+ex.name+'」','check');
+  showToast(miss>0?t('已载入示例「{name}」，还需 {n} 张参考图',{name:t(ex.name),n:miss}):t('已载入示例「{name}」',{name:t(ex.name)}),'check');
 }
 // --- 实时校验 ---
 function r2vLiveIssues(prompt){
   const refs=App.refsImages.length,auds=App.refsAudios.length;const issues=[];
   const pics=[...prompt.matchAll(/<Picture\s+(\d+)\s*>/g)].map(m=>+m[1]);
-  if(pics.length&&Math.max(...pics)>refs)issues.push({t:'err',m:`<Picture ${Math.max(...pics)}> 越界：当前只上传了 ${refs} 张参考图`});
+  if(pics.length&&Math.max(...pics)>refs)issues.push({t:'err',m:t('<Picture {n}> 越界：当前只上传了 {c} 张参考图',{n:Math.max(...pics),c:refs})});
   const am=[...prompt.matchAll(/<Audio\s+(\d+)\s*>/g)].map(m=>+m[1]);
-  if(am.length&&Math.max(...am)>auds)issues.push({t:'err',m:`<Audio ${Math.max(...am)}> 越界：当前只上传了 ${auds} 段音频`});
-  if(/<Object\s/i.test(prompt))issues.push({t:'err',m:'官方语法禁止 <Object x>，请改用 <Subject N> 连续编号'});
+  if(am.length&&Math.max(...am)>auds)issues.push({t:'err',m:t('<Audio {n}> 越界：当前只上传了 {c} 段音频',{n:Math.max(...am),c:auds})});
+  if(/<Object\s/i.test(prompt))issues.push({t:'err',m:t('官方语法禁止 <Object x>，请改用 <Subject N> 连续编号')});
   const subs=[...prompt.matchAll(/<Subject\s+(\d+)\s*>/g)].map(m=>+m[1]);
-  if(subs.length){const mx=Math.max(...subs);for(let k=1;k<=mx;k++){if(!subs.includes(k)){issues.push({t:'warn',m:`<Subject ${k}> 缺失：主体编号需从 1 连续（现有最大 ${mx}）`});break;}}}
-  if(prompt.length>4000)issues.push({t:'err',m:`字数 ${prompt.length}/4000 超限`});
+  if(subs.length){const mx=Math.max(...subs);for(let k=1;k<=mx;k++){if(!subs.includes(k)){issues.push({t:'warn',m:t('<Subject {k}> 缺失：主体编号需从 1 连续（现有最大 {m}）',{k,mx})});break;}}}
+  if(prompt.length>4000)issues.push({t:'err',m:t('字数 {n}/4000 超限',{n:prompt.length})});
   return issues;
 }
 function renderIssues(){
@@ -1611,7 +1679,7 @@ function renderIssues(){
   const issues=r2vLiveIssues(ta.value);
   if(!issues.length){
     const au=App.refsAudios.length;
-    box.innerHTML='<div class="c-ok"><i class="fas fa-circle-check"></i> 语法 OK · 与 '+App.refsImages.length+' 张参考图'+(au?' + '+au+' 段音频':'')+' 匹配（生成前仍会终检）</div>';
+    box.innerHTML='<div class="c-ok"><i class="fas fa-circle-check"></i> '+t('语法 OK · 与 {a} 张参考图',{a:App.refsImages.length})+(au?t(' + {b} 段音频',{b:au}):'')+t(' 匹配（生成前仍会终检）')+'</div>';
     return;
   }
   box.innerHTML=issues.slice(0,4).map(x=>`<div class="c-issue ${x.t}"><i class="fas ${x.t==='err'?'fa-xmark':'fa-triangle-exclamation'}"></i> ${esc(x.m)}</div>`).join('');
@@ -1635,17 +1703,21 @@ $('chipComposer').onclick=openComposer;
 
 
 // ===== MISC =====
-$('newWsBtn').onclick=async()=>{const name=prompt('工作区名称：','工作区'+(App.workspaces.length+1));if(!name)return;try{await api('/api/workspaces',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})});await loadWorkspaces();await selectWs(name.trim());showToast('已创建','check');}catch(e){showToast('创建失败: '+e.message,'warn');}};
+$('newWsBtn').onclick=async()=>{const name=prompt(t('工作区名称：'),t('工作区')+(App.workspaces.length+1));if(!name)return;try{await api('/api/workspaces',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})});await loadWorkspaces();await selectWs(name.trim());showToast(t('已创建'),'check');}catch(e){showToast(t('创建失败: ')+e.message,'warn');}};
 $('wsSel').onchange=()=>{if($('wsSel').value)selectWs($('wsSel').value);};
-$('refreshBtn').onclick=()=>{loadGens();checkComfy();showToast('已刷新','check');};
+$('refreshBtn').onclick=()=>{loadGens();checkComfy();showToast(t('已刷新'),'check');};
+
+// ===== LANGUAGE SWITCH =====
+document.querySelectorAll('#langSeg button').forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
 
 // expose for inline onclick
 window.reuseParams=reuseParams;window.continueFromGen=continueFromGen;window.downloadGen=downloadGen;window.deleteGen=deleteGen;window.openLightbox=openLightbox;window.insertSixSkeleton=insertSixSkeleton;window.openComposer=openComposer;window.closeComposer=closeComposer;window.clearComposer=clearComposer;window.applyDraft=applyDraft;window.loadExample=loadExample;window.App=App;
 
 // ===== INIT =====
 (async function init(){
+  applyLang();
   switchView('studio');
-  if($('stGuideBody'))$('stGuideBody').innerHTML=R2V_GUIDE_HTML;
+  if($('stGuideBody'))$('stGuideBody').innerHTML=guideHtml();
   await checkComfy();
   await loadWorkspaces();
   if(App.workspaces.length){await selectWs(App.workspaces[0].name);}
