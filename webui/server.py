@@ -288,12 +288,15 @@ def build_graph(prompt: str, params: dict, image_name: str, width: int, height: 
 
 
 # ==================== Ref2VA (r2v) 核心节点链 ====================
-def build_ref2va_graph(prompt: str, params: dict, ref_images: list, width: int, height: int, length: int) -> dict:
-    """Ref2VA 多素材参考图构建 (核心节点链, T8 无多参考输入故不走 T8)。
+def build_ref2va_graph(prompt: str, params: dict, ref_images: list, width: int, height: int, length: int,
+                       ref_audios: list = None) -> dict:
+    """Ref2VA 多素材参考构建 (核心节点链, T8 无多参考输入故不走 T8)。
 
     链: UNETLoader -> [ChunkFeedForward/LowVRAMAttention] -> [Sage] -> [Turbo LoRA]
         -> MiniMaxH3SigmaShift(12/3) -> BasicScheduler/BasicGuider
     参考图: LoadImage xN -> MiniMaxH3ReferenceToVideo.ref_images.ref_image_0..N
+    参考音频(P2): LoadAudio xM -> 同节点 ref_audios.ref_audio_0..M (官方 ≤3 段)
+    参考视频(P3): LoadVideo+GetVideoComponents -> ref_videos / ref_video_audios (预留)
     出片: SamplerCustomAdvanced -> VAEDecode/VAEDecodeAudio -> CreateVideo -> SaveVideo
     注: onigirikiller/SekiyoKana 生产链已证实核心 SaveVideo 的输出同样出现在
         /history 的 images 数组 (.mp4), 与现有 finish_job 扫描兼容。
@@ -336,6 +339,12 @@ def build_ref2va_graph(prompt: str, params: dict, ref_images: list, width: int, 
         g[str(nid)] = {"class_type": "LoadImage", "inputs": {"image": fname}}
         node6[f"ref_images.ref_image_{i}"] = [str(nid), 0]
         nid += 1
+    # P2: 参考音频 (官方 ≤3 段, 每段 2–15s, 总时长 ≤15s; 上传/生成时均已校验)
+    for j, afname in enumerate((ref_audios or [])[:R2V_MAX_AUDIOS]):
+        aid = 30 + j
+        g[str(aid)] = {"class_type": "LoadAudio", "inputs": {"audio": afname}}
+        node6[f"ref_audios.ref_audio_{j}"] = [str(aid), 0]
+    # P3: 参考视频 (预留): LoadVideo(40+j) + GetVideoComponents -> ref_videos.ref_video_{j} / ref_video_audios.ref_video_audio_{j}
 
     g["6"] =  {"class_type": "MiniMaxH3ReferenceToVideo", "inputs": node6}
     g["7"] =  {"class_type": "RandomNoise",            "inputs": {"noise_seed": seed}}
@@ -849,6 +858,26 @@ async def _generate_r2v(request, name, data, prompt, params):
     if pic_nums and max(pic_nums) > len(ref_images):
         raise web.HTTPBadRequest(
             text=f"提示词引用了 <Picture {max(pic_nums)}>, 但只上传了 {len(ref_images)} 张参考图")
+    # P2: 参考音频 (0..R2V_MAX_AUDIOS 段)。官方: 音频不能作为唯一参考 (图已强制 1..9, 天然满足)
+    ref_audios = [f for f in (refs.get("audios") or []) if _validate_ref_fname(f)]
+    if len(ref_audios) > R2V_MAX_AUDIOS:
+        raise web.HTTPBadRequest(text=f"r2v 参考音频最多 {R2V_MAX_AUDIOS} 段 (收到 {len(ref_audios)})")
+    missing_a = [f for f in ref_audios if not (wd / "media" / f).exists()]
+    if missing_a:
+        raise web.HTTPBadRequest(text=f"参考音频不存在, 请重新上传: {', '.join(missing_a[:3])}")
+    total_audio_s = 0.0
+    for af in ref_audios:  # 逐段 2–15s 上传时已校验, 这里兜底复核可解码 + 总时长 ≤15s
+        info = _probe_media(wd / "media" / af)
+        if not info.get("ok") or info.get("kind") != "audio":
+            raise web.HTTPBadRequest(text=f"参考音频无法解码: {af}")
+        total_audio_s += float(info.get("duration_s") or 0)
+    if ref_audios and total_audio_s > R2V_AUDIO_TOTAL_MAX_S:
+        raise web.HTTPBadRequest(
+            text=f"参考音频总时长 {total_audio_s:.1f}s 超过 {R2V_AUDIO_TOTAL_MAX_S:.0f}s 上限")
+    aud_nums = [int(m) for m in re.findall(r"<Audio\s+(\d+)\s*>", prompt)]
+    if aud_nums and max(aud_nums) > len(ref_audios):
+        raise web.HTTPBadRequest(
+            text=f"提示词引用了 <Audio {max(aud_nums)}>, 但只上传了 {len(ref_audios)} 段音频")
     # r2v 无 native 语义: 固定 custom 画布 (默认 864×480), 不做 cover 预处理
     cw = snap32(int(params.get("custom_w") or R2V_DEFAULT_W))
     ch = snap32(int(params.get("custom_h") or R2V_DEFAULT_H))
@@ -861,9 +890,9 @@ async def _generate_r2v(request, name, data, prompt, params):
     r2v_name = find_ref2va_model()
     if not model_file_present(r2v_name):
         print(f"[r2v] 警告: ref2va 权重未找到 ({r2v_name}), 提交将被 ComfyUI 拒绝", flush=True)
-    g = build_ref2va_graph(prompt, params, ref_images, cw, ch, frames)
+    g = build_ref2va_graph(prompt, params, ref_images, cw, ch, frames, ref_audios)
     refs_full = {"images": ref_images,
-                 "audios": [f for f in (refs.get("audios") or []) if _validate_ref_fname(f)],
+                 "audios": ref_audios,
                  "videos": [f for f in (refs.get("videos") or []) if _validate_ref_fname(f)]}
     return await _launch_job(name, request.app["session"], params, prompt, g,
                              ref_images[0], refs_full, "r2v", cw, ch, frames)
