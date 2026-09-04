@@ -363,6 +363,18 @@ def build_ref2va_graph(prompt: str, params: dict, ref_images: list, width: int, 
 
 
 # ==================== ComfyUI WebSocket 监听 ====================
+def push_event(job: dict, ev: dict):
+    """统一事件出口: 终态事件(done/error)闩锁到 job["final"], 供 SSE 断线重连兜底重放。
+    事件附单调递增 seq, 供重连方跳过已被 last 重放覆盖的旧事件。
+    队列为无界, put_nowait 永不阻塞, 同步/异步上下文均可安全调用。"""
+    job["seq"] = job.get("seq", 0) + 1
+    ev = dict(ev, seq=job["seq"])
+    job["last"] = ev
+    if ev.get("type") in ("done", "error"):
+        job["final"] = ev
+    job["queue"].put_nowait(ev)
+
+
 async def comfy_ws_loop(app):
     session: ClientSession = app["session"]
     ws_url = COMFYUI_URL.replace("http://", "ws://").replace("https://", "wss://") + f"/ws?clientId={CLIENT_ID}"
@@ -394,21 +406,22 @@ async def route_comfy_msg(data: dict):
     pid = d.get("prompt_id")
     job = JOBS.get(pid) if pid else None
     if t == "progress" and job:
-        await job["queue"].put({"type": "progress", "value": d.get("value", 0), "max": d.get("max", 0),
-                                 "node": d.get("node", "")})
+        push_event(job, {"type": "progress", "value": d.get("value", 0), "max": d.get("max", 0),
+                         "node": d.get("node", "")})
     elif t == "executing" and job:
         node = d.get("node")
         if node:
-            await job["queue"].put({"type": "status", "text": f"执行节点 {node}"})
+            push_event(job, {"type": "status", "text": f"执行节点 {node}"})
     elif t == "execution_success" and job:
-        await finish_job(job)
+        # 收尾(轮询 history + 拷贝大视频)放后台任务, 不阻塞 WS 循环处理其它 job 的进度
+        job["fin_task"] = asyncio.create_task(finish_job(job))
     elif t == "execution_error" and job:
         msg = str(d.get("exception_message") or d.get("node_type") or "执行出错")
         tb = d.get("traceback") or d.get("exception_traceback") or ""
         job["error"] = msg
-        await job["queue"].put({"type": "error", "message": msg, "traceback": tb})
+        push_event(job, {"type": "error", "message": msg, "traceback": tb})
     elif t == "execution_interrupted" and job:
-        await job["queue"].put({"type": "error", "message": "已中断"})
+        push_event(job, {"type": "error", "message": "已中断"})
     elif t == "execution_cached" and job:
         pass
 
@@ -459,12 +472,12 @@ async def finish_job(job: dict):
             src = comfy_out_path(*video)
             if src and src.exists():
                 vdest = f"{job['gen_id']}_video{src.suffix}"
-                shutil.copy2(src, wd / "media" / vdest)
+                await asyncio.to_thread(shutil.copy2, src, wd / "media" / vdest)
         if audio:
             src = comfy_out_path(*audio)
             if src and src.exists():
                 adest = f"{job['gen_id']}_audio{src.suffix}"
-                shutil.copy2(src, wd / "media" / adest)
+                await asyncio.to_thread(shutil.copy2, src, wd / "media" / adest)
         job["video"] = vdest
         job["audio"] = adest
         job["status"] = "done"
@@ -478,11 +491,11 @@ async def finish_job(job: dict):
         }
         gens.insert(0, rec)
         save_gens(ws_name, gens)
-        await job["queue"].put({"type": "done", "video": vdest, "audio": adest, "duration": dur, "gen_id": job["gen_id"]})
+        push_event(job, {"type": "done", "video": vdest, "audio": adest, "duration": dur, "gen_id": job["gen_id"]})
     except Exception as e:
         import traceback as _tb
         job["error"] = f"收尾失败: {e}"
-        await job["queue"].put({"type": "error", "message": job["error"], "traceback": _tb.format_exc()})
+        push_event(job, {"type": "error", "message": job["error"], "traceback": _tb.format_exc()})
 
 
 def comfy_out_path(filename: str, subfolder: str, ftype: str):
@@ -727,9 +740,35 @@ async def preview_resolution(request):
     return web.json_response({"width": tw, "height": th, "pixels": tw * th})
 
 
+def _decode_frame_sync(vp: Path, position):
+    """同步解码目标帧 (阻塞操作, 调用方经 asyncio.to_thread 放入线程池)。返回 PIL Image。"""
+    import av  # PyAV (ComfyUI 依赖, 用于读视频帧)
+    container = av.open(str(vp))
+    try:
+        stream = container.streams.video[0]
+        if position == "first":
+            target_ts = 0
+        elif position == "last":
+            # seek 到最后附近, 读最后一帧
+            target_ts = float(stream.duration * stream.time_base) if stream.duration else 0
+        else:
+            # position 是 0~1 比例
+            target_ts = float(position) * (float(stream.duration * stream.time_base) if stream.duration else 0)
+        if target_ts:
+            container.seek(int(target_ts / stream.time_base), stream=stream)
+        last_frame = None
+        for frame in container.decode(video=0):
+            last_frame = frame
+        if last_frame is None:
+            raise ValueError("无法解码视频帧")
+        return last_frame.to_image().convert("RGB")
+    finally:
+        container.close()
+
+
 async def extract_frame(request):
     """从工作区视频截取一帧 (默认最后一帧), 保存为 PNG 并拷到 ComfyUI/input。
-    返回 {filename} 可直接当作参考图。"""
+    返回 {filename} 可直接当作参考图。解码为阻塞操作, 放线程池执行以免卡事件循环。"""
     name = safe_name(request.match_info["name"])
     data = await request.json()
     video = data.get("video")
@@ -740,26 +779,7 @@ async def extract_frame(request):
     if not vp.exists():
         raise web.HTTPBadRequest(text="视频不存在")
     try:
-        import av  # PyAV (ComfyUI 依赖, 用于读视频帧)
-        container = av.open(str(vp))
-        stream = container.streams.video[0]
-        total_frames = stream.frames or 0
-        if position == "first":
-            target_ts = 0
-        elif position == "last":
-            # seek 到最后附近, 读最后一帧
-            target_ts = float(stream.duration * stream.time_base) if stream.duration else 0
-        else:
-            # position 是 0~1 比例
-            target_ts = float(position) * (float(stream.duration * stream.time_base) if stream.duration else 0)
-        container.seek(int(target_ts / stream.time_base), stream=stream) if target_ts else None
-        last_frame = None
-        for frame in container.decode(video=0):
-            last_frame = frame
-        container.close()
-        if last_frame is None:
-            raise web.HTTPBadRequest(text="无法解码视频帧")
-        img = last_frame.to_image().convert("RGB")
+        img = await asyncio.to_thread(_decode_frame_sync, vp, position)
         fname = f"frame_{uuid.uuid4().hex[:10]}.png"
         buf = io.BytesIO(); img.save(buf, format="PNG")
         wd = ws_dir(name)
@@ -940,14 +960,36 @@ async def job_events(request):
         "Connection": "keep-alive", "X-Accel-Buffering": "no"})
     await resp.prepare(request)
     q: asyncio.Queue = job["queue"]
+
+    def _sse(ev: dict) -> bytes:
+        return f"data: {json.dumps(ev, ensure_ascii=False)}\n\n".encode("utf-8")
+
     try:
+        fin = job.get("final")
+        if fin:
+            # 断线重连: 终态已闩锁, 直接重放并结束
+            await resp.write(_sse(fin))
+            return resp
+        last = job.get("last")
+        last_seq = 0
+        if last:
+            # 重连: 先补发最近一次事件 (progress/status), 前端即刻恢复显示
+            last_seq = int(last.get("seq") or 0)
+            await resp.write(_sse(last))
         while True:
             try:
                 ev = await asyncio.wait_for(q.get(), timeout=12.0)
-                await resp.write(f"data: {json.dumps(ev, ensure_ascii=False)}\n\n".encode("utf-8"))
+                if int(ev.get("seq") or 0) <= last_seq:
+                    continue  # 重连场景: 跳过已被 last 重放覆盖的堆积旧事件
+                await resp.write(_sse(ev))
                 if ev.get("type") in ("done", "error"):
                     break
             except asyncio.TimeoutError:
+                fin = job.get("final")
+                if fin:
+                    # 兜底: 终态事件被已断开的旧连接消费时, 在此补发 (最多延迟一个 keepalive 周期)
+                    await resp.write(_sse(fin))
+                    break
                 await resp.write(b": keepalive\n\n")
     except Exception as e:
         print("[sse] err", e, flush=True)
@@ -998,7 +1040,7 @@ async def interrupt(request):
     except Exception:
         pass
     if pid in JOBS:
-        await JOBS[pid]["queue"].put({"type": "error", "message": "已中断"})
+        push_event(JOBS[pid], {"type": "error", "message": "已中断"})
     return web.json_response({"ok": True})
 
 
@@ -1011,6 +1053,11 @@ async def on_startup(app):
 
 async def on_cleanup(app):
     app["stop"] = True
+    # 等待仍在进行的收尾任务 (轮询 history/拷贝视频/写历史) 落地, 再关 session
+    tasks = [j["fin_task"] for j in JOBS.values()
+             if j.get("fin_task") and not j["fin_task"].done()]
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
     await app["session"].close()
 
 

@@ -632,7 +632,7 @@ const EN_MAP={
 '参考图':'Reference image','点击或拖入图片':'Click or drag an image','点击或拖入图片（r2v 可多选 1–9 张）':'Click or drag images (r2v: multi-select 1–9)','图片已上传':'Image uploaded','上传失败: ':'Upload failed: ',
 '删除？\n':'Delete?\n','已删除':'Deleted','删除失败':'Delete failed','无视频':'No video','正在截取最后一帧…':'Grabbing last frame…','截帧失败: ':'Frame grab failed: ','开始下载':'Download started','复用参数重试':'Retry with same params','未知错误':'Unknown error','堆栈':'Traceback','失败':'Failed','播放':'Play','复用参数':'Reuse params','续写':'Continue','下载':'Download','删除':'Delete',
 'r2v 暂不支持续写（无首帧语义）':'r2v continuation unsupported (no first-frame semantics)','r2v 模式模型锁定 ref2va':'r2v locks model to ref2va','r2v 无 native 模式（参考图不裁剪）':'r2v has no native mode (refs are not cropped)',
-'先选工作区':'Pick a workspace first','请选择图片文件':'Select an image file','请选择音频文件':'Select an audio file','最多 {n} 张参考图':'At most {n} reference images','最多 {n} 张参考图（本次取前 {m} 张）':'At most {n} ref images (taking first {m})','已满 {n} 张':'{n} full','最多 {n} 段参考音频':'At most {n} audio refs','最多 {n} 段（本次取前 {m} 段）':'At most {n} audios (taking first {m})','音频已满 {n} 段':'{n} audios full','音频上传失败: ':'Audio upload failed: ','先写提示词':'Write a prompt first','生成完成':'Done','生成失败':'Generate failed','清空':'Clear','草稿已暂存：可去添加素材/调整参数，再点「全屏编写」回来继续':'Draft saved: add assets / tune params, then reopen the composer to continue','仅 r2v 模式可用':'r2v mode only','已按当前 {n} 张参考图生成/替换六段式骨架':'Six-section skeleton built/replaced for your {n} ref images','六段式骨架':'Six-section skeleton','全屏编写':'Fullscreen compose','Ref2VA 提示词指南':'Ref2VA prompt guide',
+'先选工作区':'Pick a workspace first','请选择图片文件':'Select an image file','请选择音频文件':'Select an audio file','最多 {n} 张参考图':'At most {n} reference images','最多 {n} 张参考图（本次取前 {m} 张）':'At most {n} ref images (taking first {m})','已满 {n} 张':'{n} full','最多 {n} 段参考音频':'At most {n} audio refs','最多 {n} 段（本次取前 {m} 段）':'At most {n} audios (taking first {m})','音频已满 {n} 段':'{n} audios full','音频上传失败: ':'Audio upload failed: ','先写提示词':'Write a prompt first','生成完成':'Done','生成失败':'Generate failed','进度连接中断, 请刷新查看结果':'Progress connection lost, refresh to check the result','已完成于工作区 {w}':'Finished in workspace {w}','清空':'Clear','草稿已暂存：可去添加素材/调整参数，再点「全屏编写」回来继续':'Draft saved: add assets / tune params, then reopen the composer to continue','仅 r2v 模式可用':'r2v mode only','已按当前 {n} 张参考图生成/替换六段式骨架':'Six-section skeleton built/replaced for your {n} ref images','六段式骨架':'Six-section skeleton','全屏编写':'Fullscreen compose','Ref2VA 提示词指南':'Ref2VA prompt guide',
 '剪枝':'pruned','原生':'Native','随机':'Random','sage':'sage','turbo':'turbo',
 '刚刚':'just now','{n} 分钟前':'{n} min ago','{n} 小时前':'{n} h ago','{n} 天前':'{n} d ago','{n} 步':'{n} steps','音频':'Audio','完整':'full','参考':'ref2va','{n} 图':'{n} imgs','图':'imgs',
 '多素材参考（核心节点链）→ 图片按 <Picture N> 引用':'Multi-asset reference (core node chain) → images referenced as <Picture N>',
@@ -699,7 +699,7 @@ function REF_TIP_HTML(){return t('图按上传顺序编号，提示词用 <b>&lt
 // ===== COMFY + WORKSPACES =====
 async function checkComfy(){try{const s=await api('/api/comfyui/status');$('comfyDot').className='dot '+(s.up?'up':'down');$('comfyTxt').textContent=s.up?t('在线'):t('离线');if(s.durations)App.settings.durations=s.durations;if(s.res_presets)App.settings.res_presets=s.res_presets;if(s.max_pixels)App.settings.max_pixels=s.max_pixels;if(typeof s.ref2va_present!=='undefined'){App.settings.ref2va_present=s.ref2va_present;App.settings.ref2va_model=s.ref2va_model||'';syncTaskUI();}}catch(e){$('comfyDot').className='dot down';$('comfyTxt').textContent=t('离线');}}
 async function loadWorkspaces(){App.workspaces=await api('/api/workspaces');const sel=$('wsSel');sel.innerHTML=App.workspaces.map(w=>`<option value="${esc(w.name)}">${esc(w.name)} (${w.count})</option>`).join('');if(App.curWs)sel.value=App.curWs;renderResPresets();renderDurGrid();}
-async function selectWs(name){App.curWs=name;$('wsSel').value=name;App.uploadedImage=null;App.refsImages=[];resetImgUIs();await loadGens();}
+async function selectWs(name){App.curWs=name;$('wsSel').value=name;App.uploadedImage=null;App.refsImages=[];App.currentGen=null;resetImgUIs();await loadGens();}
 async function loadGens(){if(!App.curWs){App.gens=[];renderActive();return;}try{App.gens=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/generations');}catch(e){App.gens=[];}App.gens.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));if(!App.currentGen&&App.gens.length)App.currentGen=App.gens[0];renderActive();}
 
 // ===== VIEW SWITCHING =====
@@ -1036,7 +1036,7 @@ async function generate(){
   if(App.view==='chat')collectPopup();if(App.view==='studio')collectStudioPanel();
   setGenBusy(true);
   const gid='tmp-'+Date.now();const t0=Date.now();
-  const tmp={id:gid,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:[]}:null,status:'running',_pct:0,_phase:t('提交中'),_t0:t0};
+  const tmp={id:gid,ws:App.curWs,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:[]}:null,status:'running',_pct:0,_phase:t('提交中'),_t0:t0};
   App.gens.unshift(tmp);App.currentGen=tmp;renderActive();
   genTimer=setInterval(()=>{tmp._elapsed=Math.floor((Date.now()-t0)/1000);const e=$('stElapsed');if(e)e.textContent=tmp._elapsed+'s';},500);
   try{
@@ -1045,28 +1045,42 @@ async function generate(){
       : {prompt,params:App.params,image:App.uploadedImage};
     const r=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     tmp.job_id=r.job_id;tmp.params.width=r.width;tmp.params.height=r.height;tmp.params.length=r.length;tmp._phase=t('采样中');
-    listenJob(r.job_id,gid);
+    listenJob(r.job_id,tmp);
   }catch(e){tmp.status='error';tmp.error=e.message;tmp.traceback=e.traceback||'';clearInterval(genTimer);renderActive();setGenBusy(false);}
 }
-function listenJob(jobId,gid){
-  const es=new EventSource('/api/jobs/'+jobId+'/events');App.eventSource=es;
-  es.onmessage=ev=>{
-    const d=JSON.parse(ev.data);const g=App.gens.find(x=>x.id===gid);if(!g)return;
-    if(d.type==='progress'){g._pct=d.max?Math.round(d.value/d.max*100):0;g._step=d.value;g._max=d.max;g._phase=t('采样中');updateGenProgress(gid,g);}
-    else if(d.type==='status'){g._phase=transStatus(d.text)||t('处理中');updateGenProgress(gid,g);}
-    else if(d.type==='done'){es.close();App.eventSource=null;clearInterval(genTimer);
-      loadGens().then(()=>{const real=App.gens.find(x=>x.id===d.gen_id)||App.gens[0];if(real)App.currentGen=real;renderActive();});
-      setGenBusy(false);showToast(t('生成完成'),'check');
-    }
-    else if(d.type==='error'){es.close();App.eventSource=null;clearInterval(genTimer);g.status='error';g.error=d.message;g.traceback=d.traceback||'';renderActive();setGenBusy(false);showToast(t('生成失败'),'warn');}
+function listenJob(jobId,tmp){
+  // 闭包直接持有 tmp 记录, 不再从 App.gens 重查 —— 切换工作区后仍能正确收尾 (不卡 busy/定时器)
+  const gid=tmp.id;let retries=0;
+  const stopWatch=()=>{clearInterval(genTimer);if(App.eventSource){App.eventSource.close();App.eventSource=null;}};
+  const connect=()=>{
+    const es=new EventSource('/api/jobs/'+jobId+'/events');App.eventSource=es;
+    es.onmessage=ev=>{
+      retries=0;let d;try{d=JSON.parse(ev.data);}catch(_){return;}
+      if(d.type==='progress'){tmp._pct=d.max?Math.round(d.value/d.max*100):0;tmp._step=d.value;tmp._max=d.max;tmp._phase=t('采样中');updateGenProgress(gid,tmp);}
+      else if(d.type==='status'){tmp._phase=transStatus(d.text)||t('处理中');updateGenProgress(gid,tmp);}
+      else if(d.type==='done'){stopWatch();setGenBusy(false);showToast(t('生成完成'),'check');
+        if(App.curWs===tmp.ws){ // 任务归属当前工作区: 刷新并选中新记录
+          loadGens().then(()=>{const real=App.gens.find(x=>x.id===d.gen_id)||App.gens[0];if(real)App.currentGen=real;renderActive();});
+        }else{showToast(t('已完成于工作区 {w}',{w:tmp.ws}),'check');} // 归属其它工作区: 只提示, 不污染当前列表
+      }
+      else if(d.type==='error'){stopWatch();tmp.status='error';tmp.error=d.message;tmp.traceback=d.traceback||'';renderActive();setGenBusy(false);showToast(t('生成失败'),'warn');}
+    };
+    es.onerror=()=>{
+      if(es.readyState===EventSource.CLOSED){ // 404 等致命错误: 浏览器不会自动重连, 手动退避重试
+        es.close();App.eventSource=null;
+        if(++retries<=5)setTimeout(connect,1500*retries);
+        else{tmp.status='error';tmp.error=t('进度连接中断, 请刷新查看结果');stopWatch();renderActive();setGenBusy(false);loadGens();}
+      }
+      // readyState===CONNECTING: 浏览器原生自动重连中, 不干预 (后端会重放最近事件/终态)
+    };
   };
-  es.onerror=()=>{es.close();App.eventSource=null;};
+  connect();
 }
 function updateGenProgress(gid,g){
   if(App.view==='chat'){
     const wrap=document.querySelector(`.progress-wrap[data-gen="${gid}"]`);
     if(wrap){wrap.querySelector('.progress-fill').style.width=(g._pct||0)+'%';wrap.querySelector('.pct').textContent=g._step&&g._max?t('步 {s} / {m}',{s:g._step,m:g._max}):(g._phase||'');}
-  }else if(App.view==='studio'){renderStudioStage(g);}
+  }else if(App.view==='studio'){if(App.currentGen&&App.currentGen.id===gid)renderStudioStage(g);}
   else if(App.view==='overview'){
     const card=document.querySelector(`.ov-card[data-gen="${gid}"]`);
     if(card){const f=card.querySelector('.progress-fill');if(f)f.style.width=(g._pct||0)+'%';const p=card.querySelector('.pct');if(p)p.textContent=g._step&&g._max?t('步 {s} / {m}',{s:g._step,m:g._max}):(g._phase||'');}
