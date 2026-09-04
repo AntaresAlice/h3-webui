@@ -130,6 +130,49 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 
 ---
 
+## 🚀 快速开始（Linux / macOS）
+
+### 方式一：一键启动（推荐）
+
+```bash
+./run_webui.sh                       # 使用默认 ComfyUI 根目录 (~/ComfyUI)
+./run_webui.sh /path/to/ComfyUI      # 指定 ComfyUI 根目录
+./run_webui.sh --port 9000           # 指定 WebUI 端口
+```
+
+脚本自动完成：检查 8080（已在跑则直接开浏览器）→ 检查 8188（未跑则后台拉起 ComfyUI 并等待就绪）→ 启动 WebUI → 打开浏览器 `http://127.0.0.1:8080`。
+
+> ComfyUI 根目录也可用环境变量 `H3_COMFY_ROOT` 指定；默认 `~/ComfyUI`。若 ComfyUI 用 conda 环境运行，请先 `conda activate <env>`，或设置 `H3_PYTHON=/path/to/env/bin/python`。
+
+停止 / 查看状态 / 日志：
+
+```bash
+./run_webui.sh --stop      # 同时停止 WebUI 与 ComfyUI
+./run_webui.sh --status    # 查看运行状态
+./run_webui.sh --logs      # 查看日志
+```
+
+### 方式二：手动启动
+
+```bash
+# 终端 1：启动 ComfyUI（你的正常方式）
+cd /path/to/ComfyUI
+/path/to/python main.py --listen 127.0.0.1 --port 8188
+
+# 终端 2：启动 WebUI
+cd <本仓库目录>
+COMFYUI_URL=http://127.0.0.1:8188 \
+COMFYUI_INPUT=/path/to/ComfyUI/input \
+COMFYUI_OUTPUT=/path/to/ComfyUI/output \
+/path/to/python webui/server.py
+```
+
+浏览器打开 **http://127.0.0.1:8080** 即可使用。
+
+> Linux 下后端无法从 Python 路径自动反推 ComfyUI 目录，手动启动时建议显式设置 `COMFYUI_INPUT` / `COMFYUI_OUTPUT`。
+
+---
+
 ## ⚙️ 配置
 
 全部通过**环境变量**覆盖，无配置文件：

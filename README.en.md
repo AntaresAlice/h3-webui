@@ -130,6 +130,49 @@ Open **http://127.0.0.1:8080** in your browser.
 
 ---
 
+## 🚀 Quick Start (Linux / macOS)
+
+### Option 1: One-click start (recommended)
+
+```bash
+./run_webui.sh                       # default ComfyUI root (~/ComfyUI)
+./run_webui.sh /path/to/ComfyUI      # specify your ComfyUI root
+./run_webui.sh --port 9000           # specify the WebUI port
+```
+
+The script automatically: checks 8080 (opens the browser if already running) → checks 8188 (starts ComfyUI in the background and waits until ready if not running) → starts the WebUI → opens `http://127.0.0.1:8080`.
+
+> The ComfyUI root can also be set via the `H3_COMFY_ROOT` environment variable; default `~/ComfyUI`. If ComfyUI runs in a conda env, `conda activate <env>` first, or set `H3_PYTHON=/path/to/env/bin/python`.
+
+Stop / status / logs:
+
+```bash
+./run_webui.sh --stop      # stop both WebUI and ComfyUI
+./run_webui.sh --status    # show running status
+./run_webui.sh --logs      # tail logs
+```
+
+### Option 2: Manual start
+
+```bash
+# Terminal 1: start ComfyUI (your usual way)
+cd /path/to/ComfyUI
+/path/to/python main.py --listen 127.0.0.1 --port 8188
+
+# Terminal 2: start the WebUI
+cd <this repo>
+COMFYUI_URL=http://127.0.0.1:8188 \
+COMFYUI_INPUT=/path/to/ComfyUI/input \
+COMFYUI_OUTPUT=/path/to/ComfyUI/output \
+/path/to/python webui/server.py
+```
+
+Open **http://127.0.0.1:8080** in your browser.
+
+> On Linux the backend cannot auto-detect the ComfyUI dirs from the Python path, so set `COMFYUI_INPUT` / `COMFYUI_OUTPUT` explicitly when starting manually.
+
+---
+
 ## ⚙️ Configuration
 
 Everything is overridden by **environment variables** — no config file:
