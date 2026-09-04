@@ -1023,6 +1023,7 @@ function validateR2VPrompt(prompt,refCount,audCount){
 }
 let genTimer;
 async function generate(){
+  if(App.busy)return; // 忙时拒绝重复提交 (按钮 disabled 挡不住 Ctrl+Enter 快捷键)
   if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
   const prompt=getActivePromptValue().trim();
   if(!prompt){showToast(t('先写提示词'),'warn');return;}
