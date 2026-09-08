@@ -14,6 +14,9 @@ webui/workspaces/*
 Thumbs.db
 desktop.ini
 
+# 调研笔记（个人资料，不入库）
+docs/research/
+
 # IDE
 .idea/
 .vscode/
