@@ -305,6 +305,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .r2v-tip{font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.5}
 .r2v-tip b{color:var(--text-sec)}
 .r2v-audios{display:flex;flex-direction:column;gap:4px}
+.r2v-vids{display:flex;flex-direction:column;gap:4px}
+.r2v-vid-row{display:flex;align-items:center;gap:6px;background:var(--bg-light);border:1px solid var(--border);border-radius:7px;padding:3px 6px;font-size:10px;color:var(--text-sec)}
+.r2v-vid-row video{width:72px;height:40px;object-fit:cover;border-radius:5px;background:#000;flex-shrink:0}
+.r2v-vid-row .tag{background:rgba(111,66,193,.2);color:#c39dff;font-weight:700;padding:1px 6px;border-radius:8px;font-family:ui-monospace,Consolas,monospace;white-space:nowrap;flex-shrink:0}
 .r2v-aud-row{display:flex;align-items:center;gap:6px;background:var(--bg-light);border:1px solid var(--border);border-radius:7px;padding:3px 6px;font-size:10px;color:var(--text-sec)}
 .r2v-aud-row .tag{background:rgba(111,66,193,.2);color:#c39dff;font-weight:700;padding:1px 6px;border-radius:8px;font-family:ui-monospace,Consolas,monospace;white-space:nowrap;flex-shrink:0}
 .r2v-aud-row audio{height:24px;max-width:150px;flex-shrink:0}
@@ -390,6 +394,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .c-pics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .c-pic{position:relative;aspect-ratio:1/1;border-radius:7px;overflow:hidden;border:1px solid var(--border);cursor:pointer;padding:0;background:var(--bg-lighter)}
 .c-pic img{width:100%;height:100%;object-fit:cover;display:block}
+.c-pic video{width:100%;height:100%;object-fit:cover;display:block}
 .c-pic span{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.75);color:#fff;font-size:8.5px;font-weight:700;padding:1px 5px;border-radius:8px;font-family:ui-monospace,Consolas,monospace}
 .c-pic:hover{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
 .c-ex-item{border:1px dashed var(--border);border-radius:7px;padding:7px;margin-bottom:6px}
@@ -498,6 +503,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
           <input type="file" id="stAudFiles" accept="audio/*" multiple style="display:none">
           <div class="r2v-audios" id="stRefAudios" style="display:none"></div>
           <button class="btn r2v-aud-add" id="stAudAdd" style="display:none"><i class="fas fa-microphone"></i> <span data-i18n="添加参考音频（≤3 段, 2–15s）">添加参考音频（≤3 段, 2–15s）</span></button>
+          <!-- P3: 参考视频 (≤3 段, 每段 2–15s; 原声可选) -->
+          <input type="file" id="stVidFiles" accept="video/*" multiple style="display:none">
+          <div class="r2v-vids" id="stRefVideos" style="display:none"></div>
+          <button class="btn r2v-aud-add" id="stVidAdd" style="display:none"><i class="fas fa-film"></i> <span data-i18n="添加参考视频（≤3 段, 2–15s）">添加参考视频（≤3 段, 2–15s）</span></button>
+          <label class="toggle" id="stVidAudioToggle" style="display:none;margin-top:5px"><input type="checkbox" id="stVidAudio" checked><span class="box"></span><span data-i18n="使用视频原声">使用视频原声</span></label>
         </div>
         <div class="st-sec">
           <div class="st-title"><i class="fas fa-keyboard"></i> <span data-i18n="提示词">提示词</span></div>
@@ -602,7 +612,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
         </div>
         <div class="c-right" id="cSide"></div>
       </div>
-      <input type="file" id="cRefFiles" accept="image/*" multiple style="display:none">
+      <input type="file" id="cRefFiles" accept="image/*,video/*" multiple style="display:none">
       <input type="file" id="cAudFiles" accept="audio/*" multiple style="display:none">
     </div>
   </div>
@@ -648,7 +658,10 @@ const EN_MAP={
 '同一人·多角度':'Same person · multiple angles','人物 + 道具':'Person + prop','台词 (S1)+<d>':'Dialogue (S1)+<d>',
 // composer side
 '素材引用（点击缩略图插入引用）':'Reference assets (click a thumbnail to insert)','还没有参考图——直接点下方「添加素材」上传（1–9 张，按序编号），或在 Studio 面板传好后这里自动出现。':'No reference images yet — click Add assets below to upload (1–9, numbered in order), or upload in the Studio panel and they appear here.','同一人的多张角度图都指向同一个 <code>&lt;Subject N&gt;</code>（例 1 演示）。删图请回 Studio 面板素材格。':'Multiple angles of the same person should point to the same <code>&lt;Subject N&gt;</code> (see example 1). To remove an image, use the Studio asset grid.','官方语法速查':'Syntax cheat sheet','图引用：<code>&lt;Picture N&gt;</code>，按上传顺序编号，可多次引用同一张':'Images: <code>&lt;Picture N&gt;</code>, numbered by upload order, may repeat','主体定义：<code>&lt;Subject N&gt;</code> 从 1 起<b>连续编号</b>；<b style="color:var(--error)">禁止 &lt;Object x&gt;</b>':'Subjects: <code>&lt;Subject N&gt;</code> numbered <b>consecutively from 1</b>; <b style="color:var(--error)">no &lt;Object x&gt;</b>','说话人：<code>(S1)</code> 挂在主体后（P2 音频参考）':'Speaker: append <code>(S1)</code> to the subject (P2 audio refs)','台词：<code>&lt;d&gt;[Chinese] 原文&lt;/d&gt;</code>，对白<b>不翻译</b>':'Dialogue: <code>&lt;d&gt;[Chinese] original&lt;/d&gt;</code>, <b>never translate</b>','总长度 ≤ 4000 字符':'Total length ≤ 4000 chars',
-'官方六段式':'Official six sections','— 把每张图指派给主体':'— assign each image to a subject','— 一句话剧情':'— one-sentence story','— 必须保留的身份/服饰/细节':'— identity/outfit/details to preserve','— 动作·机位·运镜（主体发挥区）':'— action·camera·moves (subject performance)','— 环境音':'— ambience','— 配乐，无则 N/A':'— music, or N/A','按当前 {n} 张图生成骨架':'Generate skeleton for current {n} images','示例库（载入即用）':'Examples (load & use)','需 {n} 图':'needs {n} imgs','载入示例':'Load example','红线速查':'Red lines','<code>&lt;Picture N&gt;</code> 最大编号 ≤ 已传图数':'<code>&lt;Picture N&gt;</code> max number ≤ uploaded images','主体编号从 1 连续，禁止跳号':'Subject numbers consecutive from 1, no gaps','禁止 <code>&lt;Object x&gt;</code>':'No <code>&lt;Object x&gt;</code>','对白原文进 <code>&lt;d&gt;</code>，别翻译':'Original dialogue goes into <code>&lt;d&gt;</code>; do not translate','无 native 分辨率：画布 = 自定义尺寸':'No native resolution: canvas = custom size',
+'官方六段式':'Official six sections','— 把每张图指派给主体':'— assign each image to a subject','— 一句话剧情':'— one-sentence story','— 必须保留的身份/服饰/细节':'— identity/outfit/details to preserve','— 动作·机位·运镜（主体发挥区）':'— action·camera·moves (subject performance)','— 环境音':'— ambience','— 配乐，无则 N/A':'— music, or N/A','按当前 {n} 张图生成骨架':'Generate skeleton for current {n} images','示例库（载入即用）':'Examples (load & use)','需 {n} 图':'needs {n} imgs','载入示例':'Load example','红线速查':'Red lines',
+// P3 视频参考
+'添加参考视频（≤3 段, 2–15s）':'Add video refs (≤3, 2–15s each)','使用视频原声':'Use video soundtrack','视频':'Videos','含音轨':'has audio','请选择视频文件':'Select a video file','最多 {n} 段参考视频':'At most {n} video refs','最多 {n} 段参考视频（本次取前 {m} 段）':'At most {n} video refs (taking first {m})','视频上传失败: ':'Video upload failed: ','视频已满 {n} 段':'{n} videos full','参考视频总时长 {s}s 超过 15s, 生成会被拒绝':'Video refs total {s}s exceeds 15s; generation will be rejected','参考视频总时长 {s}s 超过 15s 上限':'Video refs total {s}s exceeds the 15s limit','参考素材总数 (图+视频+音频) 不能超过 12 个':'Total refs (images+videos+audios) cannot exceed 12','上传参考图或视频（r2v, 图≤9 视频≤3）':'Upload reference images or videos (r2v, ≤9 imgs ≤3 videos)','提示词引用了 <Video {n}>, 但只上传了 {c} 段参考视频':'Prompt references <Video {n}>, but only {c} videos uploaded','提示词引用了 <Audio {n}>, 但可用音频编号只有 {c} 个':'Prompt references <Audio {n}>, but only {c} audio ordinals available','<Video {n}> 越界：当前只上传了 {c} 段参考视频':'<Video {n}> out of range: only {c} videos uploaded','<Audio {n}> 越界：当前可用音频编号只有 {c} 个':'<Audio {n}> out of range: only {c} audio ordinals available','视频:':'Videos:',
+'图/视频按上传顺序编号：图用 <b>&lt;Picture N&gt;</b>（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;），视频 ≤3 段（每段 2–15s, 总 ≤15s）用 <b>&lt;Video N&gt;</b> 引用（剪辑/续写/运镜参考）。可选加 <b>&lt;=3 段音频</b>，用 <b>&lt;Audio N&gt;</b> 引用（含视频原声, 音轨编号先于独立音频）':'Images/videos are numbered by upload order: images via <b>&lt;Picture N&gt;</b> (subjects via <b>&lt;Subject N&gt;</b>, never &lt;Object x&gt;); videos ≤3 (2–15s each, ≤15s total) via <b>&lt;Video N&gt;</b> (editing/continuation/camera reference). Optional ≤3 audios via <b>&lt;Audio N&gt;</b> (incl. video soundtracks; soundtrack ordinals come before standalone audios)','<code>&lt;Picture N&gt;</code> 最大编号 ≤ 已传图数':'<code>&lt;Picture N&gt;</code> max number ≤ uploaded images','主体编号从 1 连续，禁止跳号':'Subject numbers consecutive from 1, no gaps','禁止 <code>&lt;Object x&gt;</code>':'No <code>&lt;Object x&gt;</code>','对白原文进 <code>&lt;d&gt;</code>，别翻译':'Original dialogue goes into <code>&lt;d&gt;</code>; do not translate','无 native 分辨率：画布 = 自定义尺寸':'No native resolution: canvas = custom size',
 '已上传 {a}/9 张参考图':'{a}/9 reference images uploaded','未选工作区':'No workspace selected','已载入示例「{name}」，还需 {n} 张参考图':'Example "{name}" loaded; need {n} more reference images','已载入示例「{name}」':'Example "{name}" loaded','{n} 字':'{n} chars','语法 OK · 与 {a} 张参考图':'Syntax OK · matches {a} reference image(s)',' + {b} 段音频':' + {b} audio clip(s)',' 匹配（生成前仍会终检）':' (final check still runs before generation)',
 '<Picture {n}> 越界：当前只上传了 {c} 张参考图':'<Picture {n}> out of range: only {c} reference images uploaded','<Audio {n}> 越界：当前只上传了 {c} 段音频':'<Audio {n}> out of range: only {c} audio clips uploaded','官方语法禁止 <Object x>，请改用 <Subject N> 连续编号':'Official syntax forbids <Object x>; use consecutive <Subject N> from 1','<Subject {k}> 缺失：主体编号需从 1 连续（现有最大 {m}）':'<Subject {k}> missing: subject numbers must be consecutive from 1 (current max {m})','字数 {n}/4000 超限':'Length {n}/4000 exceeded',
 '插入官方六段式骨架':'Insert official six-section skeleton','图片按上传顺序编号：':'Images numbered by upload order:','提示词中可多次引用同一张':'the same image may be referenced multiple times','主体（人/物）必须用':'Subjects (people/objects) must use','定义并从 1 连续编号':'defined and numbered consecutively from 1','禁止':'forbidden','音频按上传顺序用':'Audios referenced by upload order as','引用（≤3 段, 每段 2–15s, 总 ≤15s）':'referenced (≤3 clips, 2–15s each, ≤15s total)','音色句式':'voice-timbre sentence','注明参考音色、不复制原话':'state the timbre reference; do not copy the original wording','音频参考用':'audio refs use','标注说话主体':'marks the speaker','台词原文用':'original line goes in','台词原文':'original line','对白不翻译':'never translate dialogue','提示词 ≤4000 字符':'prompt ≤4000 chars','音频参考每段 2–15s、≤3 段、总时长 ≤15s':'audio refs 2–15s each, ≤3 clips, ≤15s total','官方六段式':'official six sections','总长限制':'Length limits','说话人':'Speaker','引用语法':'Reference syntax','身份保持句式':'Identity sentence',
@@ -675,11 +688,15 @@ const App={
   uploadedImage:null,busy:false,eventSource:null,currentGen:null,prompt:'',
   refsImages:[],   // r2v 多图参考 (有序, <=9)
   refsAudios:[],   // r2v 参考音频 (P2, {fn,dur}, <=3)
+  refsVideos:[],   // r2v 参考视频 (P3, {fn,dur,aud}, <=3; aud=是否含音轨)
+  useVideoAudio:true, // P3: 是否把视频原声接入 ref_video_audios (影响 <Audio N> 编号)
   _sortDesc:true,_ovSearch:''
 };
 const $=id=>document.getElementById(id);
 const R2V_MAX_IMAGES=9;
 const R2V_MAX_AUDIOS=3;
+const R2V_MAX_VIDEOS=3;   // P3 参考视频上限
+const R2V_REF_TOTAL_MAX=12; // P3 混合参考总数上限 (图+视频+音频, 官方规格)
 const SNAP32=x=>Math.max(32,Math.round(x/32)*32);
 const api=(p,opt)=>fetch(p,opt).then(async r=>{if(r.ok)return r.status===204?null:r.json();let m=r.status+' '+r.statusText,tb='';try{const j=await r.json();m=j.error||j.detail||JSON.stringify(j);tb=j.traceback||'';}catch(_){try{m=await r.text();}catch(__){}}const e=new Error(m);e.traceback=tb;throw e;});
 
@@ -694,7 +711,8 @@ function isR2V(g){return (g&&(g.task_type==='r2v'||(g.params&&g.params.task_type
 function paramsChips(p){const c=[];if(p&&p.task_type==='r2v')c.push({t:t('r2v 多素材'),cls:'r2v'});c.push({t:p.model==='full'?'full':(p.model==='ref2va'?'ref2va':'pruned'),cls:p.model==='full'?'full':''});const w=p.width||p.custom_w,h=p.height||p.custom_h;c.push({t:(w&&h)?w+'×'+h:t('原生'),cls:''});c.push({t:t('{n} 步',{n:p.steps}),cls:''});c.push({t:fmtDur(p.duration||5),cls:''});if(p.sage)c.push({t:'sage',cls:'warn'});if(p.turbo_lora)c.push({t:'turbo',cls:'warn'});c.push({t:p.seed>=0?'#'+p.seed:t('随机'),cls:''});return c;}
 function refsCountBadge(n){return n?`<span class="badge-refs"><i class="fas fa-images"></i> r2v ×${n}</span>`:'';}
 function audioRefsBadge(n){return n?`<span class="badge-refs"><i class="fas fa-microphone"></i> ${t('音频')}×${n}</span>`:'';}
-function REF_TIP_HTML(){return t('图按上传顺序编号，提示词用 <b>&lt;Picture N&gt;</b> 引用（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;）。可选加 <b>&lt;=3 段音频</b> 作音色参考，用 <b>&lt;Audio N&gt;</b> 引用（每段 2–15s）');}
+function videoRefsBadge(n){return n?`<span class="badge-refs"><i class="fas fa-film"></i> ${t('视频')}×${n}</span>`:'';}
+function REF_TIP_HTML(){return t('图/视频按上传顺序编号：图用 <b>&lt;Picture N&gt;</b>（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;），视频 ≤3 段（每段 2–15s, 总 ≤15s）用 <b>&lt;Video N&gt;</b> 引用（剪辑/续写/运镜参考）。可选加 <b>&lt;=3 段音频</b>，用 <b>&lt;Audio N&gt;</b> 引用（含视频原声, 音轨编号先于独立音频）');}
 
 // ===== COMFY + WORKSPACES =====
 async function checkComfy(){try{const s=await api('/api/comfyui/status');$('comfyDot').className='dot '+(s.up?'up':'down');$('comfyTxt').textContent=s.up?t('在线'):t('离线');if(s.durations)App.settings.durations=s.durations;if(s.res_presets)App.settings.res_presets=s.res_presets;if(s.max_pixels)App.settings.max_pixels=s.max_pixels;if(typeof s.ref2va_present!=='undefined'){App.settings.ref2va_present=s.ref2va_present;App.settings.ref2va_model=s.ref2va_model||'';syncTaskUI();}}catch(e){$('comfyDot').className='dot down';$('comfyTxt').textContent=t('离线');}}
@@ -771,6 +789,9 @@ function syncTaskUI(){
     const cc=$('chipComposer');if(cc)cc.style.display=r2v?'':'none';
     const sa=$('stAudAdd');if(sa)sa.style.display=(r2v&&App.refsAudios.length<R2V_MAX_AUDIOS)?'':'none';
     const sab=$('stRefAudios');if(sab){if(r2v&&App.curWs)renderRefAudios();else sab.style.display='none';}
+    const sv=$('stVidAdd');if(sv)sv.style.display=(r2v&&App.refsVideos.length<R2V_MAX_VIDEOS)?'':'none';
+    const svb=$('stRefVideos');if(svb){if(r2v&&App.curWs)renderRefVideos();else svb.style.display='none';}
+    const vta=$('stVidAudioToggle');if(vta)vta.style.display=(r2v&&App.refsVideos.length)?'flex':'none';
     if(r2v)renderRefGrid();
   }
   // ref2va 权重缺失提示 (仅 r2v 且已探测)
@@ -815,7 +836,7 @@ function renderRefGrid(){
   });
   const add=$('stRefAdd');if(add)add.onclick=()=>$('stRefFiles').click();
 }
-function removeAllRefs(){App.refsImages=[];App.refsAudios=[];renderRefGrid();renderRefAudios();syncImgUIs();updateGenBtns();updateResPreviews();refreshComposerRefs();}
+function removeAllRefs(){App.refsImages=[];App.refsAudios=[];App.refsVideos=[];renderRefGrid();renderRefAudios();renderRefVideos();syncImgUIs();updateGenBtns();updateResPreviews();refreshComposerRefs();}
 
 // ===== r2v 音频参考 (P2: <=3 段, 每段 2-15s; 服务端逐段校验时长) =====
 async function addRefAudioFiles(files){
@@ -840,8 +861,50 @@ function renderRefAudios(){
   const box=$('stRefAudios');if(!box)return;
   const r2v=taskIsR2V()&&App.curWs;
   box.style.display=(r2v&&App.refsAudios.length)?'flex':'none';
-  box.innerHTML=App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><span class="fn">${esc(a.fn)}</span><button class="r2v-aud-del" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('');
+  box.innerHTML=App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${audioOrdinalBase()+i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><span class="fn">${esc(a.fn)}</span><button class="r2v-aud-del" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('');
   box.querySelectorAll('.r2v-aud-del').forEach(b=>b.onclick=()=>{App.refsAudios.splice(+b.dataset.i,1);renderRefAudios();updateGenBtns();refreshComposerRefs();});
+}
+// P3: 视频原声占用的 <Audio N> 序号数 (官方 conditioning 顺序: 图 -> 视频(音轨标签先于视频) -> 独立音频)
+function audioOrdinalBase(){return (taskIsR2V()&&App.useVideoAudio)?App.refsVideos.filter(v=>v.aud).length:0;}
+async function addRefVideoFiles(files){
+  if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
+  const list=[...files].filter(f=>f&&f.type&&f.type.startsWith('video/'));
+  if(!list.length){showToast(t('请选择视频文件'),'warn');return;}
+  const room=R2V_MAX_VIDEOS-App.refsVideos.length;
+  if(room<=0){showToast(t('最多 {n} 段参考视频',{n:R2V_MAX_VIDEOS}),'warn');return;}
+  if(list.length>room)showToast(t('最多 {n} 段参考视频（本次取前 {m} 段）',{n:R2V_MAX_VIDEOS,m:room}),'warn');
+  for(const f of list.slice(0,room)){
+    try{
+      const fd=new FormData();fd.append('type','video');fd.append('file',f,f.name);
+      const res=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/upload-media',{method:'POST',body:fd});
+      App.refsVideos.push({fn:res.filename,dur:res.duration_s,aud:!!res.has_audio});
+      renderRefVideos();updateGenBtns();refreshComposerRefs();
+    }catch(e){showToast(t('视频上传失败: ')+e.message,'warn');break;}
+  }
+  if(App.refsVideos.length>=R2V_MAX_VIDEOS)showToast(t('视频已满 {n} 段',{n:R2V_MAX_VIDEOS}),'check');
+  checkVideoTotal();
+}
+function checkVideoTotal(){
+  const s=App.refsVideos.reduce((a,v)=>a+(v.dur||0),0);
+  if(s>15.5)showToast(t('参考视频总时长 {s}s 超过 15s, 生成会被拒绝',{s:s.toFixed(1)}),'warn');
+}
+function renderRefVideos(){
+  const box=$('stRefVideos');if(!box)return;
+  const r2v=taskIsR2V()&&App.curWs;
+  box.style.display=(r2v&&App.refsVideos.length)?'flex':'none';
+  box.innerHTML=App.refsVideos.map((v,i)=>`<div class="r2v-vid-row" title="${esc(v.fn)}"><video muted preload="metadata" src="${mediaUrl('',v.fn)}#t=0.1"></video><span class="tag">&lt;Video ${i+1}&gt;</span><span class="dur">${v.dur!=null?v.dur+'s':'…'}</span><span class="fn">${esc(v.fn)}</span>${v.aud?'<i class="fas fa-volume-high" style="font-size:10px;color:var(--text-sec)" title="'+esc(t('含音轨'))+'"></i>':''}<button class="r2v-aud-del" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('');
+  box.querySelectorAll('.r2v-aud-del').forEach(b=>b.onclick=()=>{App.refsVideos.splice(+b.dataset.i,1);renderRefVideos();updateGenBtns();refreshComposerRefs();});
+  renderRefAudios(); // 视频增删会使原声占位的 <Audio N> 编号位移, 同步刷新音频标签
+}
+async function probeVideoDurations(){
+  if(!App.curWs)return;
+  for(const v of App.refsVideos){
+    if(v.dur!=null)continue;
+    try{
+      const r=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/probe-media',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:v.fn})});
+      v.dur=r.duration_s;if(r.has_audio!=null)v.aud=!!r.has_audio;renderRefVideos();
+    }catch(_){}
+  }
 }
 
 // ===== IMAGE UPLOAD (shared) =====
@@ -870,12 +933,15 @@ function syncImgUIs(){
   if(App.uploadedImage&&App.curWs&&!taskIsR2V()){sd.classList.add('has-img');sd.innerHTML=`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(App.uploadedImage)}"><div class="ovl">${t('参考图')}</div><button class="chg"><i class="fas fa-arrows-rotate"></i></button>`;sd.querySelector('.chg').onclick=e=>{e.stopPropagation();$('stImgFile').click();};}
   else{sd.classList.remove('has-img');sd.innerHTML='<i class="fas fa-cloud-arrow-up"></i><span>'+t('点击或拖入图片')+'</span>';}
 }
-function resetImgUIs(){App.uploadedImage=null;App.refsImages=[];App.refsAudios=[];syncImgUIs();updateGenBtns();updateResPreviews();if($('stRefGrid'))renderRefGrid();if($('stRefAudios'))renderRefAudios();refreshComposerRefs();}
+function resetImgUIs(){App.uploadedImage=null;App.refsImages=[];App.refsAudios=[];App.refsVideos=[];App.useVideoAudio=true;syncImgUIs();updateGenBtns();updateResPreviews();if($('stRefGrid'))renderRefGrid();if($('stRefAudios'))renderRefAudios();if($('stRefVideos'))renderRefVideos();refreshComposerRefs();}
 $('chatImgFile').onchange=e=>{if(taskIsR2V()){addRefImageFiles([...e.target.files]);}else if(e.target.files[0])handleImg(e.target.files[0]);e.target.value='';};
 $('stImgFile').onchange=e=>{if(taskIsR2V()){addRefImageFiles([...e.target.files]);}else if(e.target.files[0])handleImg(e.target.files[0]);e.target.value='';};
 $('stRefFiles').onchange=e=>{addRefImageFiles([...e.target.files]);e.target.value='';};
 $('stAudAdd').onclick=()=>$('stAudFiles').click();
 $('stAudFiles').onchange=e=>{addRefAudioFiles([...e.target.files]);e.target.value='';};
+$('stVidAdd').onclick=()=>$('stVidFiles').click();
+$('stVidFiles').onchange=e=>{addRefVideoFiles([...e.target.files]);e.target.value='';};
+$('stVidAudio').onchange=e=>{App.useVideoAudio=!!e.target.checked;renderRefVideos();refreshComposerRefs();};
 $('stImgDrop').onclick=()=>$('stImgFile').click();
 $('stImgDrop').ondragover=e=>{e.preventDefault();$('stImgDrop').style.borderColor='var(--primary)';};
 $('stImgDrop').ondragleave=()=>{$('stImgDrop').style.borderColor='';};
@@ -1000,22 +1066,27 @@ async function updateResPreviewEl(elId){
 }
 
 // ===== GEN BUTTONS =====
-function haveRefs(){return taskIsR2V()?App.refsImages.length>0:!!App.uploadedImage;}
+function haveRefs(){return taskIsR2V()?(App.refsImages.length>0||App.refsVideos.length>0):!!App.uploadedImage;} // P3: 视频可单独作参考 (video editing 场景)
 function updateGenBtns(){const ok=App.curWs&&haveRefs()&&getActivePromptValue().trim();$('chatSend').disabled=!ok||App.busy;$('stGen').disabled=!ok||App.busy;}
 function setGenBusy(busy){App.busy=busy;const btn=App.view==='chat'?'chatSend':'stGen';$(btn).disabled=busy||!haveRefs()||!getActivePromptValue().trim();$(btn).innerHTML=busy?'<span class="spinner"></span><span>'+t('生成中')+'</span>':'<i class="fas fa-paper-plane"></i><span>'+t('生成')+'</span>';if(!busy)updateGenBtns();}
 $('chatSend').onclick=generate;$('stGen').onclick=generate;
 
 // ===== GENERATION (shared) =====
-function validateR2VPrompt(prompt,refCount,audCount){
+function validateR2VPrompt(prompt,refCount,audCount,vidCount=0,audioBase=0){
   // <Picture N> 引用编号不得超过实际图片数
   const m=[...prompt.matchAll(/<Picture\s+(\d+)\s*>/g)].map(x=>+x[1]);
   if(m.length&&Math.max(...m)>refCount){
     return t('提示词引用了 <Picture {n}>, 但只上传了 {c} 张参考图',{n:Math.max(...m),c:refCount});
   }
-  // <Audio N> (P2) 引用编号不得超过实际音频段数
+  // <Video N> (P3) 引用编号不得超过实际视频段数
+  const v=[...prompt.matchAll(/<Video\s+(\d+)\s*>/g)].map(x=>+x[1]);
+  if(v.length&&Math.max(...v)>vidCount){
+    return t('提示词引用了 <Video {n}>, 但只上传了 {c} 段参考视频',{n:Math.max(...v),c:vidCount});
+  }
+  // <Audio N> (P2/P3) 编号上限 = 视频原声占位数 + 独立音频段数 (官方: 音轨编号先于独立音频)
   const a=[...prompt.matchAll(/<Audio\s+(\d+)\s*>/g)].map(x=>+x[1]);
-  if(a.length&&Math.max(...a)>audCount){
-    return t('提示词引用了 <Audio {n}>, 但只上传了 {c} 段音频',{n:Math.max(...a),c:audCount});
+  if(a.length&&Math.max(...a)>audCount+audioBase){
+    return t('提示词引用了 <Audio {n}>, 但可用音频编号只有 {c} 个',{n:Math.max(...a),c:audCount+audioBase});
   }
   // <Subject N> 应连续从 1 编号 (官方: 禁 <Object x>)
   if(/<Object\s/i.test(prompt))return t('官方语法禁止 <Object x>, 请用 <Subject N> 连续编号');
@@ -1027,22 +1098,25 @@ async function generate(){
   if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
   const prompt=getActivePromptValue().trim();
   if(!prompt){showToast(t('先写提示词'),'warn');return;}
-  if(!haveRefs()){showToast(taskIsR2V()?t('上传参考图（r2v 可多张, 上限 9）'):t('先上传参考图'),'warn');return;}
+  if(!haveRefs()){showToast(taskIsR2V()?t('上传参考图或视频（r2v, 图≤9 视频≤3）'):t('先上传参考图'),'warn');return;}
   // r2v 提交前校验
   if(taskIsR2V()){
-    const err=validateR2VPrompt(prompt,App.refsImages.length,App.refsAudios.length);
+    if(App.refsImages.length+App.refsVideos.length+App.refsAudios.length>R2V_REF_TOTAL_MAX){showToast(t('参考素材总数 (图+视频+音频) 不能超过 12 个'),'warn');return;}
+    const vs=App.refsVideos.reduce((a,x)=>a+(x.dur||0),0);
+    if(vs>15.5){showToast(t('参考视频总时长 {s}s 超过 15s 上限',{s:vs.toFixed(1)}),'warn');return;}
+    const err=validateR2VPrompt(prompt,App.refsImages.length,App.refsAudios.length,App.refsVideos.length,audioOrdinalBase());
     if(err){showToast(err,'warn');return;}
   }
   // collect params from active view
   if(App.view==='chat')collectPopup();if(App.view==='studio')collectStudioPanel();
   setGenBusy(true);
   const gid='tmp-'+Date.now();const t0=Date.now();
-  const tmp={id:gid,ws:App.curWs,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:[]}:null,status:'running',_pct:0,_phase:t('提交中'),_t0:t0};
+  const tmp={id:gid,ws:App.curWs,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:App.refsVideos.map(v=>v.fn),video_audios:App.refsVideos.filter(v=>App.useVideoAudio&&v.aud).map(v=>v.fn)}:null,status:'running',_pct:0,_phase:t('提交中'),_t0:t0};
   App.gens.unshift(tmp);App.currentGen=tmp;renderActive();
   genTimer=setInterval(()=>{tmp._elapsed=Math.floor((Date.now()-t0)/1000);const e=$('stElapsed');if(e)e.textContent=tmp._elapsed+'s';},500);
   try{
     const body=taskIsR2V()
-      ? {prompt,params:App.params,refs:{images:App.refsImages,audios:App.refsAudios.map(a=>a.fn)}}
+      ? {prompt,params:App.params,refs:{images:App.refsImages,audios:App.refsAudios.map(a=>a.fn),videos:App.refsVideos.map(v=>v.fn),use_video_audio:App.useVideoAudio}}
       : {prompt,params:App.params,image:App.uploadedImage};
     const r=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     tmp.job_id=r.job_id;tmp.params.width=r.width;tmp.params.height=r.height;tmp.params.length=r.length;tmp._phase=t('采样中');
@@ -1095,10 +1169,10 @@ function renderChat(){
   if(!App.gens.length){el.innerHTML='<div class="empty"><i class="fas fa-photo-film"></i><b>'+t('还没有生成')+'</b><p>'+t('上传图、写提示词、点生成。')+'</p></div>';updateGenBtns();return;}
   el.innerHTML='';
   for(const g of [...App.gens].reverse()){
-    const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];
+    const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];const refsVids=(g.refs&&g.refs.videos)||[];
     const u=document.createElement('div');u.className='msg user';
-    const refHtml=(r2v&&refsImgs.length)
-      ?`<div class="msg-refs">${refsImgs.map(f=>`<img class="ref-img" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}">`).join('')}${refsCountBadge(refsImgs.length)}${audioRefsBadge(((g.refs&&g.refs.audios)||[]).length)}</div>`
+    const refHtml=(r2v&&(refsImgs.length||refsVids.length))
+      ?`<div class="msg-refs">${refsImgs.map(f=>`<img class="ref-img" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}">`).join('')}${refsVids.map(f=>`<video class="ref-img" muted preload="metadata" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}#t=0.1" title="${esc(f)}"></video>`).join('')}${refsCountBadge(refsImgs.length)}${videoRefsBadge(refsVids.length)}${audioRefsBadge(((g.refs&&g.refs.audios)||[]).length)}</div>`
       :(g.image?`<img class="ref-img" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.image)}">`:'');
     u.innerHTML=`<div class="msg-bubble"><div class="msg-label"><i class="fas fa-user"></i> ${t('提示词')}</div>
       <div class="msg-card">${esc(g.prompt)}</div>
@@ -1235,8 +1309,8 @@ function renderStudioStage(g){
   }
   if(g.video){
     const chips=paramsChips(g.params);
-    const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];
-    const refStrip=(r2v&&refsImgs.length)?`<div class="si-refs">${refsImgs.map(f=>`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}">`).join('')}${refsCountBadge(refsImgs.length)}${audioRefsBadge(((g.refs&&g.refs.audios)||[]).length)}</div>`:'';
+    const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];const refsVids=(g.refs&&g.refs.videos)||[];
+    const refStrip=(r2v&&(refsImgs.length||refsVids.length))?`<div class="si-refs">${refsImgs.map(f=>`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}">`).join('')}${refsVids.map(f=>`<video muted preload="metadata" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}#t=0.1" title="${esc(f)}"></video>`).join('')}${refsCountBadge(refsImgs.length)}${videoRefsBadge(refsVids.length)}${audioRefsBadge(((g.refs&&g.refs.audios)||[]).length)}</div>`:'';
     el.innerHTML=`<div class="st-done"><div class="st-video-wrap"><video controls autoplay src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.video)}"></video><button class="st-expand" onclick="openLightbox(App.currentGen)"><i class="fas fa-expand"></i></button></div>
       <div class="st-info"><div class="si-prompt">${esc(g.prompt||'')}</div>${refStrip}<div class="si-chips">${chips.map(c=>`<span class="chip ${c.cls}">${c.t}</span>`).join('')}</div><div class="si-meta"><span><i class="far fa-clock"></i> ${relTime(g.timestamp)}</span>${g.duration?`<span>${t('耗时')} ${g.duration.toFixed(1)}s</span>`:''}<span>${t('{n} 帧',{n:g.params.length||'-'})}</span><span style="font-family:monospace">#${esc(g.id)}</span></div></div>
       <div class="st-actions"><button class="btn" onclick="reuseParams(App.currentGen)"><i class="fas fa-rotate"></i> ${t('复用')}</button>${r2v?'':`<button class="btn primary" onclick="continueFromGen(App.currentGen)"><i class="fas fa-forward"></i> ${t('续写')}</button>`}<button class="btn" onclick="downloadGen(App.currentGen)"><i class="fas fa-download"></i> ${t('下载')}</button><button class="btn danger" onclick="deleteGen(App.currentGen)"><i class="fas fa-trash-alt"></i> ${t('删除')}</button></div></div>`;
@@ -1255,14 +1329,17 @@ function reuseParams(g, opts={}){
     App.refsImages=((g.refs&&g.refs.images)||[]).slice();
     if(!App.refsImages.length&&g.image)App.refsImages=[g.image];
     App.refsAudios=((g.refs&&g.refs.audios)||[]).map(fn=>({fn,dur:null}));
+    App.refsVideos=((g.refs&&g.refs.videos)||[]).map(fn=>({fn,dur:null,aud:((g.refs&&g.refs.video_audios)||[]).includes(fn)}));
+    App.useVideoAudio=(g.refs&&g.refs.use_video_audio)!==false; // 历史记录缺省视为开启
     App.uploadedImage=null;
-    probeAudioDurations();
+    probeAudioDurations();probeVideoDurations();
   }else{
     App.refsImages=[];
     App.refsAudios=[];
+    App.refsVideos=[];
     App.uploadedImage=(opts.image)||g.image||null;
   }
-  syncTaskUI();syncPopup();syncStudioPanel();syncImgUIs();renderRefGrid();renderRefAudios();setChatPrompt(App.prompt);setStudioPrompt(App.prompt);
+  syncTaskUI();syncPopup();syncStudioPanel();syncImgUIs();renderRefGrid();renderRefAudios();renderRefVideos();setChatPrompt(App.prompt);setStudioPrompt(App.prompt);
   updateGenBtns();updateResPreviews();showToast(opts.toast||(r2v?t('已复用 r2v 参数与素材'):t('参数已复用')),'check');
   // 切到 Studio 视图方便继续编辑
   if(opts.switchView||r2v)switchView('studio');
@@ -1303,9 +1380,9 @@ function openLightbox(g){
   if(!g||!g.video)return;
   $('lbVideo').src='/api/workspaces/'+encodeURIComponent(App.curWs)+'/media/'+encodeURIComponent(g.video);
   const chips=paramsChips(g.params);
-  const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];
+  const r2v=isR2V(g);const refsImgs=(g.refs&&g.refs.images)||[];const refsVids=(g.refs&&g.refs.videos)||[];
   let refHtml='';
-  if(r2v&&refsImgs.length){refHtml=`<h4>${t('参考素材 ({n})',{n:refsImgs.length})}</h4><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">${refsImgs.map(f=>`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}" style="width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--border)">`).join('')}</div>`;}
+  if(r2v&&(refsImgs.length||refsVids.length)){refHtml=`<h4>${t('参考素材 ({n})',{n:refsImgs.length+refsVids.length})}</h4><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px">${refsImgs.map(f=>`<img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}" title="${esc(f)}" style="width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--border)">`).join('')}${refsVids.map(f=>`<video muted preload="metadata" src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(f)}#t=0.1" title="${esc(f)}" style="width:64px;height:64px;object-fit:cover;border-radius:7px;border:1px solid var(--border);background:#000">`).join('')}</div>`;}
   else if(g.image){refHtml=`<h4>${t('参考图')}</h4><img src="/api/workspaces/${encodeURIComponent(App.curWs)}/media/${encodeURIComponent(g.image)}" style="width:100%;border-radius:8px;margin-bottom:12px;border:1px solid var(--border)">`;}
   $('lbDetail').innerHTML=`<h4>${t('提示词')}</h4><div class="lb-prompt">${esc(g.prompt||'')}</div>
     ${refHtml}
@@ -1409,12 +1486,18 @@ Slight indoor reverb, clean voice track.
 non_diegetic_music:
 N/A`}
 ];
-function sixSkeletonFor(count){
+function sixSkeletonFor(count,vidCount=0){
   const n=Math.max(1,Math.min(count||0,9));
   const defs=[],rets=[];
   for(let k=1;k<=n;k++){
     defs.push(`<Picture ${k}> is the reference for <Subject ${k}>.`);
     rets.push(`<Subject ${k}> must keep the identity, proportions, colors and key details from <Picture ${k}>.`);
+  }
+  // P3: 参考视频 -> <Video N> 整视频关系条目 (剪辑源/续写起点/时间结构)
+  const v=Math.min(vidCount||0,R2V_MAX_VIDEOS);
+  for(let k=1;k<=v;k++){
+    defs.push(`<Video ${k}> is the source video (editing source / continuation start / temporal-structure reference).`);
+    rets.push(`<Video ${k}> (editing source and temporal structure): fully_preserved - follow its framing, pacing and continuity.`);
   }
   return `subject_definitions:
 ${defs.join('\n')}
@@ -1448,7 +1531,7 @@ function insertSixSkeleton(){
   const inC=composerOpen();
   const cur=inC?($('cPrompt').value||''):(getActivePromptValue()||'');
   const n=Math.max(1,Math.min(App.refsImages.length||0,9));
-  const next=replaceSixBlock(cur,sixSkeletonFor(n));
+  const next=replaceSixBlock(cur,sixSkeletonFor(n,App.refsVideos.length));
   if(inC){applyComposerText(next);const ta=$('cPrompt');ta.focus();}
   else{App.prompt=next;if(App.view==='studio')setStudioPrompt(next);else setChatPrompt(next);updateGenBtns();}
   showToast(t('已按当前 {n} 张参考图生成/替换六段式骨架',{n}),'check');
@@ -1608,14 +1691,20 @@ function renderComposerTools(){
     h+='<span class="c-tools-label" style="margin-left:4px">'+t('引用:')+'</span>';
     App.refsImages.forEach((_,i)=>h+=`<button class="c-token" data-pic="${i+1}" title="${esc('<Picture '+(i+1)+'>')}">${esc('<Picture '+(i+1)+'>')}</button>`);
   }
+  if(App.refsVideos.length){
+    h+='<span class="c-tools-label" style="margin-left:4px">'+t('视频:')+'</span>';
+    App.refsVideos.forEach((_,i)=>h+=`<button class="c-token" data-vid="${i+1}" title="${esc('<Video '+(i+1)+'>')}">${esc('<Video '+(i+1)+'>')}</button>`);
+  }
   if(App.refsAudios.length){
+    const ab=audioOrdinalBase();
     h+='<span class="c-tools-label" style="margin-left:4px">'+t('音频:')+'</span>';
-    App.refsAudios.forEach((_,i)=>h+=`<button class="c-token" data-aud="${i+1}" title="${esc(t('<Audio {n}> 音色参考',{n:i+1}))}">${esc('<Audio '+(i+1)+'>')}</button>`);
+    App.refsAudios.forEach((_,i)=>h+=`<button class="c-token" data-aud="${ab+i+1}" title="${esc(t('<Audio {n}> 音色参考',{n:ab+i+1}))}">${esc('<Audio '+(ab+i+1)+'>')}</button>`);
   }
   h+='<span class="c-tools-label" style="margin-left:4px">'+t('语法:')+'</span>';
   R2V_TOKENS.forEach(tk=>h+=`<button class="c-token" data-t="${esc(tk.t)}" title="${esc(t(tk.tip))}">${esc(tk.t)}</button>`);
   box.innerHTML=h;
   box.querySelectorAll('.c-token[data-pic]').forEach(b=>b.onclick=()=>insToken('<Picture '+b.dataset.pic+'>'));
+  box.querySelectorAll('.c-token[data-vid]').forEach(b=>b.onclick=()=>insToken('<Video '+b.dataset.vid+'>'));
   box.querySelectorAll('.c-token[data-aud]').forEach(b=>b.onclick=()=>insToken('<Audio '+b.dataset.aud+'>'));
   box.querySelectorAll('.c-token[data-t]').forEach(b=>b.onclick=()=>insToken(b.dataset.t));
 }
@@ -1630,9 +1719,12 @@ function renderComposerSide(){
   }else{
     h+='<p>'+t('还没有参考图——直接点下方「添加素材」上传（1–9 张，按序编号），或在 Studio 面板传好后这里自动出现。')+'</p>';
   }
-  if(App.refsImages.length<R2V_MAX_IMAGES)h+='<button class="btn" id="cAddMedia" style="margin-top:7px"><i class="fas fa-plus"></i> '+t('添加素材（可多选，追加到末尾）')+'</button>';
+  if(App.refsImages.length<R2V_MAX_IMAGES||App.refsVideos.length<R2V_MAX_VIDEOS)h+='<button class="btn" id="cAddMedia" style="margin-top:7px"><i class="fas fa-plus"></i> '+t('添加素材（可多选，追加到末尾）')+'</button>';
+  if(App.refsVideos.length&&App.curWs){
+    h+='<div class="c-pics" style="margin-top:7px">'+App.refsVideos.map((v,i)=>`<button class="c-pic" data-vid="${i}" title="${esc('<Video '+(i+1)+'>')}"><video muted preload="metadata" src="${mediaUrl('',v.fn)}#t=0.1"></video><span>&lt;Video ${i+1}&gt;</span></button>`).join('')+'</div>';
+  }
   if(App.refsAudios.length){
-    h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">'+App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><button class="r2v-aud-del c" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('')+'</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">'+App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${audioOrdinalBase()+i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><button class="r2v-aud-del c" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('')+'</div>';
   }
   if(App.refsAudios.length<R2V_MAX_AUDIOS)h+='<button class="btn" id="cAudAdd" style="margin-top:6px"><i class="fas fa-microphone"></i> '+t('添加参考音频（≤3 段, 2–15s/段）')+'</button>';
   h+='</div>';
@@ -1664,7 +1756,8 @@ function renderComposerSide(){
     +'<li>'+t('对白原文进 <code>&lt;d&gt;</code>，别翻译')+'</li>'
     +'<li>'+t('无 native 分辨率：画布 = 自定义尺寸')+'</li></ul></div>';
   side.innerHTML=h;
-  side.querySelectorAll('.c-pic').forEach(b=>b.onclick=()=>insToken('<Picture '+(+b.dataset.i+1)+'>'));
+  side.querySelectorAll('.c-pic[data-i]').forEach(b=>b.onclick=()=>insToken('<Picture '+(+b.dataset.i+1)+'>'));
+  side.querySelectorAll('.c-pic[data-vid]').forEach(b=>b.onclick=()=>insToken('<Video '+(+b.dataset.vid+1)+'>'));
   const am=$('cAddMedia');if(am)am.onclick=()=>$('cRefFiles').click();
   side.querySelectorAll('.r2v-aud-del.c').forEach(b=>b.onclick=()=>{App.refsAudios.splice(+b.dataset.i,1);renderRefAudios();updateGenBtns();refreshComposerRefs();});
   const aa=$('cAudAdd');if(aa)aa.onclick=()=>$('cAudFiles').click();
@@ -1678,11 +1771,17 @@ function loadExample(i){
 }
 // --- 实时校验 ---
 function r2vLiveIssues(prompt){
-  const refs=App.refsImages.length,auds=App.refsAudios.length;const issues=[];
+  const refs=App.refsImages.length,auds=App.refsAudios.length,vids=App.refsVideos.length;const issues=[];
   const pics=[...prompt.matchAll(/<Picture\s+(\d+)\s*>/g)].map(m=>+m[1]);
   if(pics.length&&Math.max(...pics)>refs)issues.push({t:'err',m:t('<Picture {n}> 越界：当前只上传了 {c} 张参考图',{n:Math.max(...pics),c:refs})});
+  const vds=[...prompt.matchAll(/<Video\s+(\d+)\s*>/g)].map(m=>+m[1]);
+  if(vds.length&&Math.max(...vds)>vids)issues.push({t:'err',m:t('<Video {n}> 越界：当前只上传了 {c} 段参考视频',{n:Math.max(...vds),c:vids})});
+  const ab=audioOrdinalBase();
   const am=[...prompt.matchAll(/<Audio\s+(\d+)\s*>/g)].map(m=>+m[1]);
-  if(am.length&&Math.max(...am)>auds)issues.push({t:'err',m:t('<Audio {n}> 越界：当前只上传了 {c} 段音频',{n:Math.max(...am),c:auds})});
+  if(am.length&&Math.max(...am)>ab+auds)issues.push({t:'err',m:t('<Audio {n}> 越界：当前可用音频编号只有 {c} 个',{n:Math.max(...am),c:ab+auds})});
+  if(refs+vids+auds>R2V_REF_TOTAL_MAX)issues.push({t:'err',m:t('参考素材总数 (图+视频+音频) 不能超过 12 个')});
+  const vs=App.refsVideos.reduce((a,x)=>a+(x.dur||0),0);
+  if(vs>15.5)issues.push({t:'err',m:t('参考视频总时长 {s}s 超过 15s 上限',{s:vs.toFixed(1)})});
   if(/<Object\s/i.test(prompt))issues.push({t:'err',m:t('官方语法禁止 <Object x>，请改用 <Subject N> 连续编号')});
   const subs=[...prompt.matchAll(/<Subject\s+(\d+)\s*>/g)].map(m=>+m[1]);
   if(subs.length){const mx=Math.max(...subs);for(let k=1;k<=mx;k++){if(!subs.includes(k)){issues.push({t:'warn',m:t('<Subject {k}> 缺失：主体编号需从 1 连续（现有最大 {m}）',{k,mx})});break;}}}
@@ -1710,7 +1809,13 @@ $('cPrompt').addEventListener('scroll',()=>{const m=$('cMirror');if(m)m.scrollTo
 $('cPrompt').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();closeComposer();generate();}});
 $('cSplit').addEventListener('input',e=>{const ta=e.target.closest('textarea[data-sec]');if(!ta)return;updateSecCounts();joinAndSync();});
 $('cSplit').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();closeComposer();generate();}});
-$('cRefFiles').onchange=e=>{addRefImageFiles([...e.target.files]);e.target.value='';};
+$('cRefFiles').onchange=e=>{ // P3: 按类型分发 (视频进参考视频通道, 其余进图片)
+  const fs=[...e.target.files];
+  const vids=fs.filter(f=>f.type&&f.type.startsWith('video/'));
+  const imgs=fs.filter(f=>!f.type||!f.type.startsWith('video/'));
+  if(vids.length)addRefVideoFiles(vids);
+  if(imgs.length)addRefImageFiles(imgs);
+  e.target.value='';};
 $('cAudFiles').onchange=e=>{addRefAudioFiles([...e.target.files]);e.target.value='';};
 $('composer').addEventListener('mousedown',e=>{if(e.target===$('composer'))closeComposer();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&composerOpen())closeComposer();});

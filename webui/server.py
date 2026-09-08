@@ -95,6 +95,10 @@ R2V_MAX_VIDEOS = 3        # 参考视频 <=3 段 (P3)
 R2V_AUDIO_MIN_S = 2.0     # 单段音频最短 2s
 R2V_AUDIO_MAX_S = 15.0    # 单段音频最长 15s
 R2V_AUDIO_TOTAL_MAX_S = 15.0  # 音频总时长 <=15s
+R2V_VIDEO_MIN_S = 2.0     # 单段视频最短 2s (P3, 官方规格)
+R2V_VIDEO_MAX_S = 15.0    # 单段视频最长 15s (P3)
+R2V_VIDEO_TOTAL_MAX_S = 15.0  # 视频总时长 <=15s (P3)
+R2V_REF_TOTAL_MAX = 12    # 混合参考文件总数上限 (图+视频+音频, 官方规格)
 R2V_DEFAULT_W, R2V_DEFAULT_H = 864, 480  # r2v 无 native 语义时的默认画布
 # H3 约束 (来自 custom_nodes core.py): 画布必须 32 倍数, 面积上限 1920*1088
 CANVAS_MULT = 32
@@ -289,14 +293,19 @@ def build_graph(prompt: str, params: dict, image_name: str, width: int, height: 
 
 # ==================== Ref2VA (r2v) 核心节点链 ====================
 def build_ref2va_graph(prompt: str, params: dict, ref_images: list, width: int, height: int, length: int,
-                       ref_audios: list = None) -> dict:
+                       ref_audios: list = None, ref_videos: list = None,
+                       video_audio_flags: list = None) -> dict:
     """Ref2VA 多素材参考构建 (核心节点链, T8 无多参考输入故不走 T8)。
 
     链: UNETLoader -> [ChunkFeedForward/LowVRAMAttention] -> [Sage] -> [Turbo LoRA]
         -> MiniMaxH3SigmaShift(12/3) -> BasicScheduler/BasicGuider
     参考图: LoadImage xN -> MiniMaxH3ReferenceToVideo.ref_images.ref_image_0..N
     参考音频(P2): LoadAudio xM -> 同节点 ref_audios.ref_audio_0..M (官方 ≤3 段)
-    参考视频(P3): LoadVideo+GetVideoComponents -> ref_videos / ref_video_audios (预留)
+    参考视频(P3): LoadVideo xK -> GetVideoComponents -> ref_videos.ref_video_0..K (官方 ≤3 段)
+        原声音轨: GetVideoComponents 输出槽1 -> ref_video_audios.ref_video_audio_j
+        (与 ref_video_j 按尾号配对; 仅对实际含音轨的视频接线, 由 video_audio_flags 对齐)
+        官方 conditioning 顺序: 图 -> 视频(音轨标签先于视频标签) -> 独立音频,
+        故启用音轨时前端 <Audio N> 编号须把音轨排在独立音频之前 (音轨占 base 个序号)。
     出片: SamplerCustomAdvanced -> VAEDecode/VAEDecodeAudio -> CreateVideo -> SaveVideo
     注: onigirikiller/SekiyoKana 生产链已证实核心 SaveVideo 的输出同样出现在
         /history 的 images 数组 (.mp4), 与现有 finish_job 扫描兼容。
@@ -344,7 +353,16 @@ def build_ref2va_graph(prompt: str, params: dict, ref_images: list, width: int, 
         aid = 30 + j
         g[str(aid)] = {"class_type": "LoadAudio", "inputs": {"audio": afname}}
         node6[f"ref_audios.ref_audio_{j}"] = [str(aid), 0]
-    # P3: 参考视频 (预留): LoadVideo(40+j) + GetVideoComponents -> ref_videos.ref_video_{j} / ref_video_audios.ref_video_audio_{j}
+    # P3: 参考视频 (官方 ≤3 段, 每段 2–15s): LoadVideo(40+j) -> GetVideoComponents(44+j)
+    #     槽0 帧序列 -> ref_videos.ref_video_{j}; 槽1 原声 -> ref_video_audios.ref_video_audio_{j} (有音轨才接)
+    vid_flags = list(video_audio_flags or [])
+    for j, vfname in enumerate((ref_videos or [])[:R2V_MAX_VIDEOS]):
+        lid, gid = 40 + j, 44 + j
+        g[str(lid)] = {"class_type": "LoadVideo", "inputs": {"file": vfname}}
+        g[str(gid)] = {"class_type": "GetVideoComponents", "inputs": {"video": [str(lid), 0]}}
+        node6[f"ref_videos.ref_video_{j}"] = [str(gid), 0]
+        if j < len(vid_flags) and vid_flags[j]:
+            node6[f"ref_video_audios.ref_video_audio_{j}"] = [str(gid), 1]
 
     g["6"] =  {"class_type": "MiniMaxH3ReferenceToVideo", "inputs": node6}
     g["7"] =  {"class_type": "RandomNoise",            "inputs": {"noise_seed": seed}}
@@ -704,7 +722,15 @@ async def upload_media(request):
                 (wd / "media" / fname).unlink(missing_ok=True)
                 raise web.HTTPBadRequest(
                     text=f"参考音频需 {R2V_AUDIO_MIN_S:.0f}–{R2V_AUDIO_MAX_S:.0f}s (当前 {info['duration_s']}s)")
+        if kind == "video" and info["duration_s"] is not None:
+            # P3: 参考视频单段 2–15s (官方规格; 总时长 ≤15s 在生成时校验)
+            if info["duration_s"] < R2V_VIDEO_MIN_S or info["duration_s"] > R2V_VIDEO_MAX_S:
+                (wd / "media" / fname).unlink(missing_ok=True)
+                raise web.HTTPBadRequest(
+                    text=f"参考视频需 {R2V_VIDEO_MIN_S:.0f}–{R2V_VIDEO_MAX_S:.0f}s (当前 {info['duration_s']}s)")
         resp.update({"duration_s": info["duration_s"], "width": info["width"], "height": info["height"]})
+        if kind == "video":
+            resp["has_audio"] = bool(info.get("has_audio"))  # P3: 原声音轨有无 (决定 <Audio N> 编号与接线)
     return web.json_response(resp)
 
 
@@ -864,12 +890,16 @@ def _validate_ref_fname(fn):
 
 
 async def _generate_r2v(request, name, data, prompt, params):
-    """r2v: 多图参考 (核心节点链)。图不预处理, 原图 + ref_image_size=match 交给节点。"""
+    """r2v: 多素材参考 (核心节点链)。图/视频不预处理, 原样 + ref_image_size=match 交给节点。
+    P3: 视频可单独作参考 (video editing/continuation), 故图允许 0 张。"""
     wd = ws_dir(name)
     refs = data.get("refs") or {}
     ref_images = [f for f in (refs.get("images") or []) if _validate_ref_fname(f)]
-    if not 1 <= len(ref_images) <= R2V_MAX_IMAGES:
-        raise web.HTTPBadRequest(text=f"r2v 需要 1–{R2V_MAX_IMAGES} 张参考图 (收到 {len(ref_images)})")
+    ref_videos = [f for f in (refs.get("videos") or []) if _validate_ref_fname(f)]
+    if len(ref_images) > R2V_MAX_IMAGES:
+        raise web.HTTPBadRequest(text=f"r2v 参考图最多 {R2V_MAX_IMAGES} 张 (收到 {len(ref_images)})")
+    if not ref_images and not ref_videos:
+        raise web.HTTPBadRequest(text="r2v 需要至少 1 张参考图或 1 段参考视频")
     missing = [f for f in ref_images if not (wd / "media" / f).exists()]
     if missing:
         raise web.HTTPBadRequest(text=f"参考图不存在, 请重新上传: {', '.join(missing[:3])}")
@@ -894,10 +924,40 @@ async def _generate_r2v(request, name, data, prompt, params):
     if ref_audios and total_audio_s > R2V_AUDIO_TOTAL_MAX_S:
         raise web.HTTPBadRequest(
             text=f"参考音频总时长 {total_audio_s:.1f}s 超过 {R2V_AUDIO_TOTAL_MAX_S:.0f}s 上限")
-    aud_nums = [int(m) for m in re.findall(r"<Audio\s+(\d+)\s*>", prompt)]
-    if aud_nums and max(aud_nums) > len(ref_audios):
+    # P3: 参考视频 (0..R2V_MAX_VIDEOS 段)。单段 2–15s 上传时已校验, 这里兜底复核;
+    #     总时长 ≤15s; 混合文件总数 (图+视频+音频) ≤12 (官方规格)
+    if len(ref_videos) > R2V_MAX_VIDEOS:
+        raise web.HTTPBadRequest(text=f"r2v 参考视频最多 {R2V_MAX_VIDEOS} 段 (收到 {len(ref_videos)})")
+    missing_v = [f for f in ref_videos if not (wd / "media" / f).exists()]
+    if missing_v:
+        raise web.HTTPBadRequest(text=f"参考视频不存在, 请重新上传: {', '.join(missing_v[:3])}")
+    use_video_audio = bool(refs.get("use_video_audio", True))
+    video_audio_flags = []
+    total_video_s = 0.0
+    for vf in ref_videos:
+        info = _probe_media(wd / "media" / vf)
+        if not info.get("ok") or info.get("kind") != "video":
+            raise web.HTTPBadRequest(text=f"参考视频无法解码: {vf}")
+        total_video_s += float(info.get("duration_s") or 0)
+        # 原声开关 + 实际含音轨才接线 (官方: 音轨独立占用 <Audio N> 编号, 先于独立音频)
+        video_audio_flags.append(bool(use_video_audio and info.get("has_audio")))
+    if ref_videos and total_video_s > R2V_VIDEO_TOTAL_MAX_S:
         raise web.HTTPBadRequest(
-            text=f"提示词引用了 <Audio {max(aud_nums)}>, 但只上传了 {len(ref_audios)} 段音频")
+            text=f"参考视频总时长 {total_video_s:.1f}s 超过 {R2V_VIDEO_TOTAL_MAX_S:.0f}s 上限")
+    if len(ref_images) + len(ref_videos) + len(ref_audios) > R2V_REF_TOTAL_MAX:
+        raise web.HTTPBadRequest(
+            text=f"参考素材总数 (图+视频+音频) 不能超过 {R2V_REF_TOTAL_MAX} 个 (当前 {len(ref_images) + len(ref_videos) + len(ref_audios)})")
+    vid_nums = [int(m) for m in re.findall(r"<Video\s+(\d+)\s*>", prompt)]
+    if vid_nums and max(vid_nums) > len(ref_videos):
+        raise web.HTTPBadRequest(
+            text=f"提示词引用了 <Video {max(vid_nums)}>, 但只上传了 {len(ref_videos)} 段参考视频")
+    # <Audio N> 编号含视频原声占位: 音轨按视频顺序先于独立音频获得编号 (官方 conditioning 顺序)
+    audio_base = sum(1 for f in video_audio_flags if f)
+    aud_nums = [int(m) for m in re.findall(r"<Audio\s+(\d+)\s*>", prompt)]
+    if aud_nums and max(aud_nums) > audio_base + len(ref_audios):
+        raise web.HTTPBadRequest(
+            text=f"提示词引用了 <Audio {max(aud_nums)}>, 但可用音频编号只有 {audio_base + len(ref_audios)} 个"
+                 f" (视频原声占 {audio_base} 个 + 独立音频 {len(ref_audios)} 段)")
     # r2v 无 native 语义: 固定 custom 画布 (默认 864×480), 不做 cover 预处理
     cw = snap32(int(params.get("custom_w") or R2V_DEFAULT_W))
     ch = snap32(int(params.get("custom_h") or R2V_DEFAULT_H))
@@ -910,12 +970,15 @@ async def _generate_r2v(request, name, data, prompt, params):
     r2v_name = find_ref2va_model()
     if not model_file_present(r2v_name):
         print(f"[r2v] 警告: ref2va 权重未找到 ({r2v_name}), 提交将被 ComfyUI 拒绝", flush=True)
-    g = build_ref2va_graph(prompt, params, ref_images, cw, ch, frames, ref_audios)
+    g = build_ref2va_graph(prompt, params, ref_images, cw, ch, frames, ref_audios,
+                           ref_videos, video_audio_flags)
     refs_full = {"images": ref_images,
                  "audios": ref_audios,
-                 "videos": [f for f in (refs.get("videos") or []) if _validate_ref_fname(f)]}
+                 "videos": ref_videos,
+                 "use_video_audio": use_video_audio,
+                 "video_audios": [vf for vf, f in zip(ref_videos, video_audio_flags) if f]}
     return await _launch_job(name, request.app["session"], params, prompt, g,
-                             ref_images[0], refs_full, "r2v", cw, ch, frames)
+                             ref_images[0] if ref_images else None, refs_full, "r2v", cw, ch, frames)
 
 
 async def _launch_job(name, session, params, prompt, g, image_field, refs, task_type, tw, th, frames):
