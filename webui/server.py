@@ -709,25 +709,27 @@ async def upload_media(request):
         print("[upload_media] copy to ComfyUI/input failed:", e, flush=True)
 
     if kind in ("audio", "video"):
+        def _reject(msg: str):
+            # 失败路径: 同时清理工作区副本与 ComfyUI/input 副本, 避免孤立文件
+            (wd / "media" / fname).unlink(missing_ok=True)
+            (Path(COMFYUI_INPUT) / fname).unlink(missing_ok=True)
+            raise web.HTTPBadRequest(text=msg)
         info = _probe_media(wd / "media" / fname)
         if not info["ok"]:
-            (wd / "media" / fname).unlink(missing_ok=True)
-            raise web.HTTPBadRequest(text=info["error"])
+            _reject(info["error"])
         if info["kind"] != kind:
             # 名不符实: 例如标 audio 实际是视频
-            (wd / "media" / fname).unlink(missing_ok=True)
-            raise web.HTTPBadRequest(text=f"文件实际是 {info['kind']}, 与上传类型 {kind} 不符")
-        if kind == "audio" and info["duration_s"] is not None:
+            _reject(f"文件实际是 {info['kind']}, 与上传类型 {kind} 不符")
+        if info["duration_s"] is None:
+            # 无法探测时长 -> 无法执行 2–15s 边界校验, 拒绝 (避免静默绕过)
+            _reject(f"无法探测{'音频' if kind == 'audio' else '视频'}时长, 无法校验 2–15s 限制, 请换常见容器格式 (如 mp4/wav)")
+        if kind == "audio":
             if info["duration_s"] < R2V_AUDIO_MIN_S or info["duration_s"] > R2V_AUDIO_MAX_S:
-                (wd / "media" / fname).unlink(missing_ok=True)
-                raise web.HTTPBadRequest(
-                    text=f"参考音频需 {R2V_AUDIO_MIN_S:.0f}–{R2V_AUDIO_MAX_S:.0f}s (当前 {info['duration_s']}s)")
-        if kind == "video" and info["duration_s"] is not None:
+                _reject(f"参考音频需 {R2V_AUDIO_MIN_S:.0f}–{R2V_AUDIO_MAX_S:.0f}s (当前 {info['duration_s']}s)")
+        if kind == "video":
             # P3: 参考视频单段 2–15s (官方规格; 总时长 ≤15s 在生成时校验)
             if info["duration_s"] < R2V_VIDEO_MIN_S or info["duration_s"] > R2V_VIDEO_MAX_S:
-                (wd / "media" / fname).unlink(missing_ok=True)
-                raise web.HTTPBadRequest(
-                    text=f"参考视频需 {R2V_VIDEO_MIN_S:.0f}–{R2V_VIDEO_MAX_S:.0f}s (当前 {info['duration_s']}s)")
+                _reject(f"参考视频需 {R2V_VIDEO_MIN_S:.0f}–{R2V_VIDEO_MAX_S:.0f}s (当前 {info['duration_s']}s)")
         resp.update({"duration_s": info["duration_s"], "width": info["width"], "height": info["height"]})
         if kind == "video":
             resp["has_audio"] = bool(info.get("has_audio"))  # P3: 原声音轨有无 (决定 <Audio N> 编号与接线)
@@ -924,21 +926,27 @@ async def _generate_r2v(request, name, data, prompt, params):
     if ref_audios and total_audio_s > R2V_AUDIO_TOTAL_MAX_S:
         raise web.HTTPBadRequest(
             text=f"参考音频总时长 {total_audio_s:.1f}s 超过 {R2V_AUDIO_TOTAL_MAX_S:.0f}s 上限")
-    # P3: 参考视频 (0..R2V_MAX_VIDEOS 段)。单段 2–15s 上传时已校验, 这里兜底复核;
+    # P3: 参考视频 (0..R2V_MAX_VIDEOS 段)。逐段兜底复核 2–15s 与可解码性 (upload_media 已校验, 此处防绕过);
     #     总时长 ≤15s; 混合文件总数 (图+视频+音频) ≤12 (官方规格)
     if len(ref_videos) > R2V_MAX_VIDEOS:
         raise web.HTTPBadRequest(text=f"r2v 参考视频最多 {R2V_MAX_VIDEOS} 段 (收到 {len(ref_videos)})")
     missing_v = [f for f in ref_videos if not (wd / "media" / f).exists()]
     if missing_v:
         raise web.HTTPBadRequest(text=f"参考视频不存在, 请重新上传: {', '.join(missing_v[:3])}")
-    use_video_audio = bool(refs.get("use_video_audio", True))
+    use_video_audio = refs.get("use_video_audio", True)
+    if not isinstance(use_video_audio, bool):
+        raise web.HTTPBadRequest(text="use_video_audio 必须是布尔值 (true/false)")
     video_audio_flags = []
     total_video_s = 0.0
     for vf in ref_videos:
         info = _probe_media(wd / "media" / vf)
         if not info.get("ok") or info.get("kind") != "video":
             raise web.HTTPBadRequest(text=f"参考视频无法解码: {vf}")
-        total_video_s += float(info.get("duration_s") or 0)
+        d = info.get("duration_s")
+        if d is None or not (R2V_VIDEO_MIN_S <= d <= R2V_VIDEO_MAX_S):
+            raise web.HTTPBadRequest(
+                text=f"参考视频时长越界 (需 {R2V_VIDEO_MIN_S:.0f}–{R2V_VIDEO_MAX_S:.0f}s): {vf} ({'未知' if d is None else str(d)+'s'})")
+        total_video_s += float(d)
         # 原声开关 + 实际含音轨才接线 (官方: 音轨独立占用 <Audio N> 编号, 先于独立音频)
         video_audio_flags.append(bool(use_video_audio and info.get("has_audio")))
     if ref_videos and total_video_s > R2V_VIDEO_TOTAL_MAX_S:

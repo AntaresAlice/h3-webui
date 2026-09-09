@@ -20,3 +20,7 @@ docs/research/
 # IDE
 .idea/
 .vscode/
+
+# vim swap files
+*.swp
+*.swo

@@ -51,6 +51,7 @@ function extractArr(name) {
 }
 const examples = extractArr('R2V_EXAMPLES');
 const tokens = extractArr('R2V_TOKENS');
+const presetGroups = extractArr('PRESET_GROUPS');
 
 let missing = 0;
 console.log('== EN_MAP size:', mapKeys.size, '| static t() keys:', used.size, '| data-i18n* attrs:', attrs.size, '| dynamic t() calls:', dynCalls);
@@ -58,12 +59,16 @@ console.log('== EN_MAP size:', mapKeys.size, '| static t() keys:', used.size, '|
 for (const k of used) if (!mapKeys.has(k)) { console.log('MISSING t() key:', JSON.stringify(k)); missing++; }
 for (const k of attrs) if (!mapKeys.has(k)) { console.log('MISSING data-i18n attr key:', JSON.stringify(k)); missing++; }
 for (const ex of examples) if (ex.name && !mapKeys.has(ex.name)) { console.log('MISSING example name key:', JSON.stringify(ex.name)); missing++; }
+for (const ex of examples) if (ex.hint && !mapKeys.has(ex.hint)) { console.log('MISSING example hint key:', JSON.stringify(ex.hint)); missing++; }
 for (const tk of tokens) { if (tk.tip && !mapKeys.has(tk.tip)) { console.log('MISSING token tip key:', JSON.stringify(tk.tip)); missing++; } }
+for (const g of presetGroups) if (g.label && !mapKeys.has(g.label)) { console.log('MISSING preset group label key:', JSON.stringify(g.label)); missing++; }
 
 // dead keys (in map, referenced by nothing static; note dynamic lookups use example names / token tips)
 const dynKeySet = new Set();
 for (const ex of examples) if (ex.name) dynKeySet.add(ex.name);
+for (const ex of examples) if (ex.hint) dynKeySet.add(ex.hint);
 for (const tk of tokens) { if (tk.tip) dynKeySet.add(tk.tip); }
+for (const g of presetGroups) if (g.label) dynKeySet.add(g.label);
 const dead = [...mapKeys].filter(k => !used.has(k) && !attrs.has(k) && !dynKeySet.has(k));
 
 console.log('missing keys:', missing);

@@ -90,7 +90,6 @@ def make_mp4(seconds, with_audio):
 
 
 async def upload(client, kind, data, fname):
-    fd = client.data_factory() if False else None  # noqa: 用 aiohttp.FormData
     import aiohttp
     fd = aiohttp.FormData()
     fd.add_field("type", kind)
