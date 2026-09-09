@@ -32,7 +32,7 @@
 | 🔧 **Turbo LoRA 自动匹配** | 按步数自动选 4-step / 8-step turbo LoRA，也可指定自定义 LoRA 文件 |
 | 🔊 **原生音频** | 直接输出带声音的视频（H3 原生 audio），浏览器内可拖动进度条（Range 流式播放） |
 | 🚀 **历史懒加载** | Studio 左侧历史列表分批渲染（40 条/批）+ 缩略图 IntersectionObserver 懒加载，几百条历史也流畅 |
-| 🎯 **Ref2VA 多素材参考** | 任务类型可切换 `i2v 单图 / r2v 多素材`：r2v 支持 **1–9 张参考图 + 最多 3 段参考音频**，按 `<Picture N>` / `<Audio N>` 位置引用；内置**六段式提示词编辑器**（全屏整段编辑 + 六段分栏，正文逐 token 标红越界引用、快捷插入素材 token 与骨架，chat / Studio 均可打开），走核心节点链（SigmaShift 12/3 + res_multistep/simple + SaveVideo），可复用 Turbo LoRA |
+| 🎯 **Ref2VA 多素材参考** | 任务类型可切换 `i2v 单图 / r2v 多素材`。r2v 可混用 **最多 9 张参考图、3 段参考视频、3 段参考音频**（三种加起来不超过 12 个），在提示词里用 `<Picture N>` / `<Video N>` / `<Audio N>` 按位置引用；只传视频不传图也能用（续写 / 剪辑场景），视频原声音轨默认接入、可一键关闭；内置**六段式提示词编辑器**（全屏整段编辑 + 六段分栏，正文逐 token 标红越界引用、快捷插入素材 token 与骨架，chat / Studio 均可打开，示例库会按你的素材组合自动推荐示例），走核心节点链（SigmaShift 12/3 + res_multistep/simple + SaveVideo），可复用 Turbo LoRA |
 | 💾 **数据零依赖** | 前端纯原生 JS（无框架、无构建），后端仅依赖 aiohttp / Pillow / PyAV（ComfyUI 自带） |
 
 ---
@@ -123,8 +123,8 @@ D:\ComfyUI\python_embeded\python.exe webui\server.py
 ### 使用流程
 
 1. 顶部选择/新建 **工作区**（每个工作区历史独立）。
-2. 上传 **参考图**（拖拽或点击；r2v 多素材时还可追加参考音频）。
-3. 填写 **提示词**（支持中文），选择 模型 / 步数 / 时长 / 分辨率模式。r2v 可打开**全屏编辑器**（整段或六段分栏，正文直接插入 `<Picture N>` / `<Audio N>` 素材 token）。
+2. 上传 **参考图**（拖拽或点击；r2v 多素材时还可追加参考音频与参考视频）。
+3. 填写 **提示词**（支持中文），选择 模型 / 步数 / 时长 / 分辨率模式。r2v 可打开**全屏编辑器**（整段或六段分栏，正文直接插入 `<Picture N>` / `<Video N>` / `<Audio N>` 素材 token）。
 4. 点击生成，右侧实时显示 **步数进度**，完成后自动入库并播放。
 5. 在 **Studio** 左侧历史中点选旧作品 → **⏩ 续写**（末帧转首帧）或 **♻️ 复用参数**（含参考图/音频）。
 
@@ -200,11 +200,11 @@ COMFYUI_OUTPUT=/path/to/ComfyUI/output \
 | GET | `/api/workspaces/{name}/generations` | 历史列表（新→旧） |
 | DELETE | `/api/workspaces/{name}/generations/{gid}` | 删除一条记录及其媒体 |
 | POST | `/api/workspaces/{name}/upload-image` | 上传参考图（base64 data-url）→ 返回文件名（i2v） |
-| POST | `/api/workspaces/{name}/upload-media` | multipart 上传参考素材 `{type: image\|audio\|video, file}` → 返回 `{filename, kind, duration_s, width, height}`（r2v；图片 PIL 校验，音视频 PyAV 校验） |
+| POST | `/api/workspaces/{name}/upload-media` | multipart 上传参考素材 `{type: image\|audio\|video, file}` → 返回 `{filename, kind, duration_s, width, height}`（r2v；图片 PIL 校验，音视频 PyAV 校验；音频/视频单段限 2–15s，视频额外返回 `has_audio`） |
 | POST | `/api/workspaces/{name}/probe-media` | PyAV 探测已上传媒体 `{filename}` → `{kind, duration_s, width, height, ok}` |
 | POST | `/api/workspaces/{name}/preview-resolution` | 预览后端实际分辨率 `{image, res_mode, custom_w, custom_h, native_scale}` |
 | POST | `/api/workspaces/{name}/extract-frame` | 截帧 `{video, position: "first"\|"last"\|0~1}` → 返回 PNG 文件名（续写用） |
-| POST | `/api/workspaces/{name}/generate` | 提交生成 `{prompt, params, image}`（i2v）或 `{prompt, params, refs:{images:[...], audios:[...]}}`（r2v）→ `{job_id, gen_id, width, height, length}` |
+| POST | `/api/workspaces/{name}/generate` | 提交生成 `{prompt, params, image}`（i2v）或 `{prompt, params, refs:{images, videos, audios, use_video_audio}}`（r2v）→ `{job_id, gen_id, width, height, length}` |
 | GET | `/api/jobs/{job_id}/events` | SSE 进度流：`progress`（value/max/node）/ `status` / `done`（video/audio/duration）/ `error` |
 | POST | `/api/interrupt` | 中断任务 `{job_id}` |
 | GET | `/api/workspaces/{name}/media/{file}` | 流式媒体（支持 Range） |
@@ -227,6 +227,7 @@ COMFYUI_OUTPUT=/path/to/ComfyUI/output \
     ├── h3_i2v_smoke.py      # 冒烟测试：i2v（直连 ComfyUI API 验证端到端链路，可选）
     ├── h3_r2v_smoke.py      # 冒烟测试：r2v 多图参考核心链（--input-dir 可自动生成测试图）
     ├── p2_audio_smoke.py    # 冒烟测试：r2v 音频参考（上传/校验/生成，含负例）
+    ├── p3_video_ref_smoke.py # 冒烟测试：r2v 视频参考（构图接线 / 上传与生成边界）
     ├── e2e_r2v_test.py      # 端到端测试：r2v 完整出片
     └── sse_progress_check.py # SSE 进度核对脚本
 ```
@@ -251,6 +252,9 @@ H3 要求宽高为 32 倍数且面积 ≤ 1920×1088，后端会按模式自动�
 
 **Q: 生成参数很多，如何复用？**
 Studio 或总览卡片上的 **♻️ 复用** 一键把参数 + 参考图带回左侧面板；**⏩ 续写** 额外把该视频末帧作为新首帧。
+
+**Q: r2v 里 `<Audio N>` 的编号为什么和音频上传顺序对不上？**
+因为参考视频的原声音轨也会占用编号：音轨按视频顺序排在独立音频前面。比如传了 1 段带声音的视频和 1 段独立音频，视频原声是 `<Audio 1>`，独立音频才是 `<Audio 2>`；关掉"使用视频原声"后，编号就会从独立音频重新算起。
 
 ---
 

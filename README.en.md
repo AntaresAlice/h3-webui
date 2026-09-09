@@ -32,7 +32,7 @@
 | 🔧 **Turbo LoRA auto-matching** | Automatically picks the 4-step / 8-step turbo LoRA by step count; custom LoRA files also supported |
 | 🔊 **Native audio** | Outputs videos with sound directly (H3 native audio); draggable progress bar in the browser (Range streaming) |
 | 🚀 **Lazy history** | Studio history list rendered in batches (40 per batch) + thumbnails lazy-loaded via IntersectionObserver; smooth even with hundreds of records |
-| 🎯 **Ref2VA multi-asset reference** | Task type switchable `i2v single image / r2v multi-asset`: r2v supports **1–9 reference images + up to 3 audio clips**, referenced by `<Picture N>` / `<Audio N>`; built-in **six-section prompt editor** (fullscreen whole-mode editing + six-section split, per-token out-of-range highlighting, quick insert of asset tokens & skeleton, openable from Chat / Studio); runs the core node chain (SigmaShift 12/3 + res_multistep/simple + SaveVideo), Turbo LoRA reusable |
+| 🎯 **Ref2VA multi-asset reference** | Task type switchable `i2v single image / r2v multi-asset`. r2v accepts **up to 9 reference images, 3 reference videos and 3 reference audio clips** (12 in total across all kinds), referenced by position in the prompt via `<Picture N>` / `<Video N>` / `<Audio N>`; videos also work on their own (continuation / editing), and their original soundtracks are wired in by default with a one-click toggle; built-in **six-section prompt editor** (fullscreen whole-mode editing + six-section split, per-token out-of-range highlighting, quick insert of asset tokens & skeleton, openable from Chat / Studio; the example library suggests presets based on your asset mix), running the core node chain (SigmaShift 12/3 + res_multistep/simple + SaveVideo) with reusable Turbo LoRA |
 | 💾 **Zero data dependencies** | Frontend is pure vanilla JS (no framework, no build); backend only needs aiohttp / Pillow / PyAV (bundled with ComfyUI) |
 
 ---
@@ -123,8 +123,8 @@ Open **http://127.0.0.1:8080** in your browser.
 ### Usage flow
 
 1. Select / create a **workspace** at the top (each workspace keeps independent history).
-2. Upload a **reference image** (drag & drop or click; r2v multi-asset can also add reference audio clips).
-3. Write the **prompt** (Chinese supported) and pick model / steps / duration / resolution mode. For r2v, open the **fullscreen editor** (whole or six-section split; insert `<Picture N>` / `<Audio N>` asset tokens directly in the text).
+2. Upload a **reference image** (drag & drop or click; r2v can also add reference videos and audio clips).
+3. Write the **prompt** (Chinese supported) and pick model / steps / duration / resolution mode. For r2v, open the **fullscreen editor** (whole or six-section split; insert `<Picture N>` / `<Video N>` / `<Audio N>` asset tokens directly in the text).
 4. Click Generate; the right side shows **step progress** live, auto-saved and playable when done.
 5. In the **Studio** history list, pick an old work → **⏩ Continue** (last frame → first frame) or **♻️ Reuse params** (reference images/audio included).
 
@@ -200,11 +200,11 @@ All under the `/api` prefix, JSON:
 | GET | `/api/workspaces/{name}/generations` | History list (newest first) |
 | DELETE | `/api/workspaces/{name}/generations/{gid}` | Delete one record and its media |
 | POST | `/api/workspaces/{name}/upload-image` | Upload a reference image (base64 data-url) → filename (i2v) |
-| POST | `/api/workspaces/{name}/upload-media` | Multipart upload of reference assets `{type: image\|audio\|video, file}` → `{filename, kind, duration_s, width, height}` (r2v; PIL check for images, PyAV check for audio/video) |
+| POST | `/api/workspaces/{name}/upload-media` | Multipart upload of reference assets `{type: image\|audio\|video, file}` → `{filename, kind, duration_s, width, height}` (r2v; PIL check for images, PyAV check for audio/video; audio/video clips limited to 2–15s each, videos additionally return `has_audio`) |
 | POST | `/api/workspaces/{name}/probe-media` | PyAV-probe an uploaded media `{filename}` → `{kind, duration_s, width, height, ok}` |
 | POST | `/api/workspaces/{name}/preview-resolution` | Preview the backend's actual resolution `{image, res_mode, custom_w, custom_h, native_scale}` |
 | POST | `/api/workspaces/{name}/extract-frame` | Extract a frame `{video, position: "first"\|"last"\|0~1}` → PNG filename (for continuation) |
-| POST | `/api/workspaces/{name}/generate` | Submit generation `{prompt, params, image}` (i2v) or `{prompt, params, refs:{images:[...], audios:[...]}}` (r2v) → `{job_id, gen_id, width, height, length}` |
+| POST | `/api/workspaces/{name}/generate` | Submit generation `{prompt, params, image}` (i2v) or `{prompt, params, refs:{images, videos, audios, use_video_audio}}` (r2v) → `{job_id, gen_id, width, height, length}` |
 | GET | `/api/jobs/{job_id}/events` | SSE progress stream: `progress` (value/max/node) / `status` / `done` (video/audio/duration) / `error` |
 | POST | `/api/interrupt` | Interrupt a job `{job_id}` |
 | GET | `/api/workspaces/{name}/media/{file}` | Stream media (Range supported) |
@@ -227,6 +227,7 @@ All under the `/api` prefix, JSON:
     ├── h3_i2v_smoke.py      # smoke test: i2v (direct ComfyUI API end-to-end, optional)
     ├── h3_r2v_smoke.py      # smoke test: r2v multi-image reference core chain (--input-dir can auto-generate test images)
     ├── p2_audio_smoke.py    # smoke test: r2v audio refs (upload/validation/generation incl. negative cases)
+    ├── p3_video_ref_smoke.py # smoke test: r2v video refs (graph wiring / upload & generation boundaries)
     ├── e2e_r2v_test.py      # end-to-end test: full r2v generation
     └── sse_progress_check.py # SSE progress check script
 ```
@@ -251,6 +252,9 @@ H3 requires width/height to be 32-multiples with area ≤ 1920×1088; the backen
 
 **Q: Many generation params — how to reuse them?**
 The **♻️ Reuse** button on Studio / Overview cards brings params + reference images back to the left panel; **⏩ Continue** additionally uses that video's last frame as the new first frame.
+
+**Q: Why don't the `<Audio N>` numbers match my audio upload order?**
+Because a reference video's soundtrack occupies an ordinal too, and soundtracks are numbered before standalone audio, in video order. For example, with one video that has sound plus one standalone clip, the video soundtrack is `<Audio 1>` and the standalone clip is `<Audio 2>`. Turning off "Use video soundtrack" renumbers the standalone clips from `<Audio 1>` again.
 
 ---
 
