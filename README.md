@@ -28,11 +28,13 @@
 | ⚡ **真实进度** | WebSocket 桥接 ComfyUI，SSE 推送**步数级**实时进度（如 3/8 步），非定时器假进度 |
 | 🖼 **参考图复用** | 一键复用历史参数，参考图/音频同步恢复；支持更换图片后自动重新上传 |
 | ⏩ **视频续写** | 把已有视频的**最后一帧**抽取为下一段的首帧参考图，实现连续叙事 |
+| 🔀 **生成模式** | **首帧 i2v**（默认，单图作首帧）/ **t2v 文字**（不接任何素材，纯文字 → 音视频）/ **尾帧**（l2v，单图作视频结尾画面）/ **首尾帧**（fl2v，首+尾双图，尾帧自动对齐首帧画布）/ **r2v 多素材**，五种模式共用同一套参数面板 |
 | 📐 **分辨率控制** | 15 种 32 倍数预设（16:9 / 9:16 / 1:1 / 4:3 / 3:4 / 21:9 / 2:3），或 **native 模式**按原图比例 + 缩放滑条（10–100%） |
 | 🔧 **Turbo LoRA 自动匹配** | 按步数自动选 4-step / 8-step turbo LoRA，也可指定自定义 LoRA 文件 |
 | 🔊 **原生音频** | 直接输出带声音的视频（H3 原生 audio），浏览器内可拖动进度条（Range 流式播放） |
+| 🎚 **音频用途标注** | 每段参考音频可标注 **音色 / 原声 / 音乐**：音色 = 学它说话的音色并说新台词，原声 = 原样复用这段声音，音乐 = 当 BGM 铺底。只影响提示词语义、不改构图接线；标注为 原声/音乐 时会提醒在提示词开头加 `[audio reuse]` |
 | 🚀 **历史懒加载** | Studio 左侧历史列表分批渲染（40 条/批）+ 缩略图 IntersectionObserver 懒加载，几百条历史也流畅 |
-| 🎯 **Ref2VA 多素材参考** | 任务类型可切换 `i2v 单图 / r2v 多素材`。r2v 可混用 **最多 9 张参考图、3 段参考视频、3 段参考音频**（三种加起来不超过 12 个），在提示词里用 `<Picture N>` / `<Video N>` / `<Audio N>` 按位置引用；只传视频不传图也能用（续写 / 剪辑场景），视频原声音轨默认接入、可一键关闭；内置**六段式提示词编辑器**（全屏整段编辑 + 六段分栏，正文逐 token 标红越界引用、快捷插入素材 token 与骨架，chat / Studio 均可打开，示例库会按你的素材组合自动推荐示例），走核心节点链（SigmaShift 12/3 + res_multistep/simple + SaveVideo），可复用 Turbo LoRA |
+| 🎯 **Ref2VA 多素材参考** | 任务类型可切换 `i2v 单图 / t2v 文字 / r2v 多素材`（i2v 家族另有帧位 `首帧 / 尾帧 / 首尾帧`）。r2v 可混用 **最多 9 张参考图、3 段参考视频、3 段参考音频**（三种加起来不超过 12 个），在提示词里用 `<Picture N>` / `<Video N>` / `<Audio N>` 按位置引用；只传视频不传图也能用（续写 / 剪辑场景），视频原声音轨默认接入、可一键关闭；内置**六段式提示词编辑器**（全屏整段编辑 + 六段分栏，正文逐 token 标红越界引用、快捷插入素材 token 与骨架，chat / Studio 均可打开，示例库会按你的素材组合自动推荐示例），走核心节点链（SigmaShift 12/3 + res_multistep/simple + SaveVideo），可复用 Turbo LoRA |
 | 💾 **数据零依赖** | 前端纯原生 JS（无框架、无构建），后端仅依赖 aiohttp / Pillow / PyAV（ComfyUI 自带） |
 
 ---
@@ -207,7 +209,7 @@ COMFYUI_OUTPUT=/path/to/ComfyUI/output \
 | POST | `/api/workspaces/{name}/probe-media` | PyAV 探测已上传媒体 `{filename}` → `{kind, duration_s, width, height, ok}` |
 | POST | `/api/workspaces/{name}/preview-resolution` | 预览后端实际分辨率 `{image, res_mode, custom_w, custom_h, native_scale}` |
 | POST | `/api/workspaces/{name}/extract-frame` | 截帧 `{video, position: "first"\|"last"\|0~1}` → 返回 PNG 文件名（续写用） |
-| POST | `/api/workspaces/{name}/generate` | 提交生成 `{prompt, params, image}`（i2v）或 `{prompt, params, refs:{images, videos, audios, use_video_audio}}`（r2v）→ `{job_id, gen_id, width, height, length}` |
+| POST | `/api/workspaces/{name}/generate` | 提交生成。i2v/t2v 家族：`{prompt, params:{task_type:"i2v"\|"t2v"}, image, image_last, frame_mode}`（`frame_mode` = first/last/both，`image_last` 仅在 both 时有效，t2v 不接受任何参考图）；r2v：`{prompt, params:{task_type:"r2v"}, refs:{images, videos, audios, use_video_audio}}` → `{job_id, gen_id, width, height, length}` |
 | GET | `/api/jobs/{job_id}/events` | SSE 进度流：`progress`（value/max/node）/ `status` / `done`（video/audio/duration）/ `error` |
 | POST | `/api/interrupt` | 中断任务 `{job_id}` |
 | GET | `/api/workspaces/{name}/media/{file}` | 流式媒体（支持 Range） |
@@ -231,6 +233,8 @@ COMFYUI_OUTPUT=/path/to/ComfyUI/output \
     ├── h3_i2v_smoke.py      # 冒烟测试：i2v（直连 ComfyUI API 验证端到端链路，可选）
     ├── h3_r2v_smoke.py      # 冒烟测试：r2v 多图参考核心链（--input-dir 可自动生成测试图）
     ├── p2_audio_smoke.py    # 冒烟测试：r2v 音频参考（上传/校验/生成，含负例）
+    ├── p3_video_ref_smoke.py  # 冒烟测试：r2v 视频参考（构图接线 / 上传与生成边界）
+    ├── p35_modes_smoke.py   # 冒烟测试：生成模式扩展（t2v 文生 / 尾帧 / 首尾帧）
     ├── e2e_r2v_test.py      # 端到端测试：r2v 完整出片
     ├── sse_progress_check.py  # SSE 进度核对脚本
     ├── sse_latch_selftest.py  # SSE 收尾/闩锁自测

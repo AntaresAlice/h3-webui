@@ -28,11 +28,13 @@
 | ⚡ **Real progress** | WebSocket bridging to ComfyUI; SSE pushes **step-level** progress (e.g. 3/8 steps) — no fake timer progress |
 | 🖼 **Reference reuse** | One-click reuse of history params with reference images/audio restored; auto re-upload after replacing an image |
 | ⏩ **Video continuation** | Extracts the **last frame** of an existing video as the first-frame reference of the next segment for continuous storytelling |
+| 🔀 **Generation modes** | **i2v first frame** (default, one image as the first frame) / **t2v text-only** (no assets at all, pure text → video+audio) / **last frame** (l2v, one image as the video's ending frame) / **first + last** (fl2v, two images; the last frame is auto-aligned to the first frame's canvas) / **r2v multi-asset** — five modes sharing one parameter panel |
 | 📐 **Resolution control** | 15 presets at 32-multiple steps (16:9 / 9:16 / 1:1 / 4:3 / 3:4 / 21:9 / 2:3), or **native mode** keeping source aspect + a scale slider (10–100%) |
 | 🔧 **Turbo LoRA auto-matching** | Automatically picks the 4-step / 8-step turbo LoRA by step count; custom LoRA files also supported |
 | 🔊 **Native audio** | Outputs videos with sound directly (H3 native audio); draggable progress bar in the browser (Range streaming) |
+| 🎚 **Audio role labels** | Each reference audio can be tagged **voice / as-is / music**: voice = learn that timbre and speak new lines, as-is = reuse this exact audio, music = use as the background bed. Prompt semantics only — graph wiring is unchanged; tagging as-is/music triggers a reminder to add the `[audio reuse]` prefix |
 | 🚀 **Lazy history** | Studio history list rendered in batches (40 per batch) + thumbnails lazy-loaded via IntersectionObserver; smooth even with hundreds of records |
-| 🎯 **Ref2VA multi-asset reference** | Task type switchable `i2v single image / r2v multi-asset`. r2v accepts **up to 9 reference images, 3 reference videos and 3 reference audio clips** (12 in total across all kinds), referenced by position in the prompt via `<Picture N>` / `<Video N>` / `<Audio N>`; videos also work on their own (continuation / editing), and their original soundtracks are wired in by default with a one-click toggle; built-in **six-section prompt editor** (fullscreen whole-mode editing + six-section split, per-token out-of-range highlighting, quick insert of asset tokens & skeleton, openable from Chat / Studio; the example library suggests presets based on your asset mix), running the core node chain (SigmaShift 12/3 + res_multistep/simple + SaveVideo) with reusable Turbo LoRA |
+| 🎯 **Ref2VA multi-asset reference** | Task type switchable `i2v single image / t2v text-only / r2v multi-asset` (the i2v family also has frame slots `first / last / first+last`). r2v accepts **up to 9 reference images, 3 reference videos and 3 reference audio clips** (12 in total across all kinds), referenced by position in the prompt via `<Picture N>` / `<Video N>` / `<Audio N>`; videos also work on their own (continuation / editing), and their original soundtracks are wired in by default with a one-click toggle; built-in **six-section prompt editor** (fullscreen whole-mode editing + six-section split, per-token out-of-range highlighting, quick insert of asset tokens & skeleton, openable from Chat / Studio; the example library suggests presets based on your asset mix), running the core node chain (SigmaShift 12/3 + res_multistep/simple + SaveVideo) with reusable Turbo LoRA |
 | 💾 **Zero data dependencies** | Frontend is pure vanilla JS (no framework, no build); backend only needs aiohttp / Pillow / PyAV (bundled with ComfyUI) |
 
 ---
@@ -207,7 +209,7 @@ All under the `/api` prefix, JSON:
 | POST | `/api/workspaces/{name}/probe-media` | PyAV-probe an uploaded media `{filename}` → `{kind, duration_s, width, height, ok}` |
 | POST | `/api/workspaces/{name}/preview-resolution` | Preview the backend's actual resolution `{image, res_mode, custom_w, custom_h, native_scale}` |
 | POST | `/api/workspaces/{name}/extract-frame` | Extract a frame `{video, position: "first"\|"last"\|0~1}` → PNG filename (for continuation) |
-| POST | `/api/workspaces/{name}/generate` | Submit generation `{prompt, params, image}` (i2v) or `{prompt, params, refs:{images, videos, audios, use_video_audio}}` (r2v) → `{job_id, gen_id, width, height, length}` |
+| POST | `/api/workspaces/{name}/generate` | Submit generation. i2v/t2v family: `{prompt, params:{task_type:"i2v"\|"t2v"}, image, image_last, frame_mode}` (`frame_mode` = first/last/both, `image_last` only valid with both, t2v takes no reference image); r2v: `{prompt, params:{task_type:"r2v"}, refs:{images, videos, audios, use_video_audio}}` → `{job_id, gen_id, width, height, length}` |
 | GET | `/api/jobs/{job_id}/events` | SSE progress stream: `progress` (value/max/node) / `status` / `done` (video/audio/duration) / `error` |
 | POST | `/api/interrupt` | Interrupt a job `{job_id}` |
 | GET | `/api/workspaces/{name}/media/{file}` | Stream media (Range supported) |
@@ -231,6 +233,8 @@ All under the `/api` prefix, JSON:
     ├── h3_i2v_smoke.py      # smoke test: i2v (direct ComfyUI API end-to-end, optional)
     ├── h3_r2v_smoke.py      # smoke test: r2v multi-image reference core chain (--input-dir can auto-generate test images)
     ├── p2_audio_smoke.py    # smoke test: r2v audio refs (upload/validation/generation incl. negative cases)
+    ├── p3_video_ref_smoke.py  # smoke test: r2v video refs (graph wiring / upload & generation boundaries)
+    ├── p35_modes_smoke.py   # smoke test: generation mode extensions (t2v text-only / last frame / first+last)
     ├── e2e_r2v_test.py      # end-to-end test: full r2v generation
     ├── sse_progress_check.py  # SSE progress check script
     ├── sse_latch_selftest.py  # SSE finalize/latch self-test
