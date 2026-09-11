@@ -238,7 +238,11 @@ def duration_to_frames(seconds: int) -> int:
 
 
 # ==================== ComfyUI prompt 图构建 ====================
-def build_graph(prompt: str, params: dict, image_name: str, width: int, height: int, length: int) -> dict:
+def build_graph(prompt: str, params: dict, image_name: str, width: int, height: int, length: int,
+                last_image_name: str = None) -> dict:
+    """T8 链构图。image_name=首帧 (None=纯文字); last_image_name=尾帧 (首尾帧模式)。
+    task_type 按接线推导: 首尾 FL2VA / 仅尾 L2VA / 仅首 I2VA / 都无 T2VA
+    (T8 resolve_task_type 校验接线与 task_type 必须一致)。"""
     model = MODELS.get(params.get("model", "pruned"), MODELS["pruned"])
     steps = int(params.get("steps", 4))
     seed = int(params.get("seed", 0))
@@ -248,15 +252,6 @@ def build_graph(prompt: str, params: dict, image_name: str, width: int, height: 
         "2":  {"class_type": "VAELoader",  "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"}},
         "3":  {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", "type": "minimax", "device": "default"}},
         "4":  {"class_type": "UNETLoader", "inputs": {"unet_name": model, "weight_dtype": "default"}},
-        "6":  {"class_type": "LoadImage",  "inputs": {"image": image_name, "upload": "image"}},
-        "7":  {"class_type": "MiniMaxH3AudioConditioningT8", "inputs": {
-            "prompt": prompt, "width": width, "height": height, "length": length,
-            "task_type": "I2VA", "audio_mode": "native", "audio_denoise_strength": 1.0,
-            "add_source_as_reference": True, "prompt_primary_audio_ordinal": 0,
-            "strict_prompt_tags": True, "ref_image_size": "match",
-            "reference_video_policy": "official_2_to_15s",
-            "clip": ["3", 0], "video_vae": ["1", 0], "audio_vae": ["2", 0],
-            "first_frame": ["6", 0]}},
         "8":  {"class_type": "MiniMaxH3DualClockSamplerT8", "inputs": {
             "steps": steps, "shift_video": 12.0, "shift_audio": 3.0,
             "model": ["4", 0], "av_latent": ["7", 1]}},
@@ -272,6 +267,22 @@ def build_graph(prompt: str, params: dict, image_name: str, width: int, height: 
             "save_metadata": True, "trim_to_audio": False, "pingpong": False,
             "save_output": True, "images": ["12", 0], "audio": ["12", 1]}},
     }
+    if image_name:
+        g["6"] = {"class_type": "LoadImage", "inputs": {"image": image_name, "upload": "image"}}
+    if last_image_name:
+        g["6b"] = {"class_type": "LoadImage", "inputs": {"image": last_image_name, "upload": "image"}}
+    task_tt = ("FL2VA" if (image_name and last_image_name) else
+               "L2VA" if last_image_name else
+               "I2VA" if image_name else "T2VA")
+    g["7"] = {"class_type": "MiniMaxH3AudioConditioningT8", "inputs": {
+        "prompt": prompt, "width": width, "height": height, "length": length,
+        "task_type": task_tt, "audio_mode": "native", "audio_denoise_strength": 1.0,
+        "add_source_as_reference": True, "prompt_primary_audio_ordinal": 0,
+        "strict_prompt_tags": True, "ref_image_size": "match",
+        "reference_video_policy": "official_2_to_15s",
+        "clip": ["3", 0], "video_vae": ["1", 0], "audio_vae": ["2", 0],
+        **({"first_frame": ["6", 0]} if image_name else {}),
+        **({"last_frame": ["6b", 0]} if last_image_name else {})}}
     model_src = "4"
     # 低显存优化 (精度无损, 16G 跑 47G 模型靠它避免 ComfyUI 默认 offload 降精度)
     # 顺序: UNETLoader -> ChunkFeedForward -> LowVRAMAttention -> [Sage] -> [Turbo LoRA] -> Sampler
@@ -826,15 +837,23 @@ async def extract_frame(request):
 async def generate(request):
     """提交生成任务。params.task_type 决定走哪条链:
       - i2v (默认): T8 自定义节点链, 单图预处理, build_graph()
-      - r2v: 核心节点链 (多图参考), build_ref2va_graph()"""
+      - t2v: 同链不接图 (纯文字 → 音视频)
+      - r2v: 核心节点链 (多素材参考), build_ref2va_graph()
+    i2v/t2v 家族另支持 frame_mode: first(首帧, 默认) / last(单图作尾帧) / both(首尾双帧)"""
     name = safe_name(request.match_info["name"])
     data = await request.json()
     prompt = (data.get("prompt") or "").strip()
     params = data.get("params") or {}
     raw_image = data.get("image")  # i2v 参考图 (r2v 用 refs.images, 不走此字段)
+    raw_image_last = data.get("image_last")  # 首尾帧模式的尾帧图
     task_type = str(params.get("task_type") or data.get("task_type") or "i2v").lower()
-    if task_type not in ("i2v", "r2v"):
+    if task_type not in ("i2v", "t2v", "r2v"):
         task_type = "i2v"
+    frame_mode = str(data.get("frame_mode") or "first").lower()
+    if frame_mode not in ("first", "last", "both"):
+        raise web.HTTPBadRequest(text="frame_mode 必须是 first / last / both")
+    if frame_mode != "both" and raw_image_last:
+        raise web.HTTPBadRequest(text="image_last 仅在 frame_mode=both 时有效")
     if not prompt:
         raise web.HTTPBadRequest(text="请填写提示词")
     params["task_type"] = task_type
@@ -858,28 +877,59 @@ async def generate(request):
     if task_type == "r2v":
         return await _generate_r2v(request, name, data, prompt, params)
 
-    # ==================== i2v (T8 链, 原逻辑) ====================
-    if not raw_image:
-        raise web.HTTPBadRequest(text="请上传参考图")
-    # 图像预处理: 按分辨率模式裁剪/缩放到 32 倍数 (节点会把图拉伸到 w×h, 故先处理好)
-    raw_path = ws_dir(name) / "media" / raw_image
-    if not raw_path.exists():
-        raise web.HTTPBadRequest(text="参考图不存在, 请重新上传")
-    proc_bytes, tw, th = preprocess_image(raw_path.read_bytes(), params.get("res_mode", "native"),
-                                          params.get("custom_w"), params.get("custom_h"),
-                                          float(params.get("native_scale", 1.0)))
-    frames = duration_to_frames(int(params.get("duration", 5)))
-    proc_name = f"proc_{uuid.uuid4().hex[:10]}.png"
+    # ==================== i2v / t2v (T8 链; frame_mode: first/last/both) ====================
+    if task_type == "t2v":
+        if raw_image or raw_image_last:
+            raise web.HTTPBadRequest(text="t2v 文字模式不接受参考图")
+        if params.get("res_mode", "custom") == "native":
+            params["res_mode"] = "custom"  # 无来源图, native 无语义
+    else:
+        if frame_mode == "both" and not (raw_image and raw_image_last):
+            raise web.HTTPBadRequest(text="首尾帧模式需要同时提供首帧图与尾帧图")
+        if frame_mode != "both" and not raw_image:
+            raise web.HTTPBadRequest(text="请上传参考图")
+    params["frame_mode"] = frame_mode
     wd = ws_dir(name)
-    (wd / "media" / proc_name).write_bytes(proc_bytes)
-    try:
-        shutil.copy2(wd / "media" / proc_name, COMFYUI_INPUT / proc_name)
-    except Exception as e:
-        print("[generate] copy proc to ComfyUI/input failed:", e, flush=True)
+
+    def _load_proc(raw, canvas=None):
+        """读取+预处理上传图 (canvas=(w,h) 时按 custom 强制对齐该画布)。返回 (proc_name, w, h)。"""
+        p = ws_dir(name) / "media" / raw
+        if not p.exists():
+            raise web.HTTPBadRequest(text="参考图不存在, 请重新上传")
+        if canvas:
+            b, w, h = preprocess_image(p.read_bytes(), "custom", canvas[0], canvas[1], 1.0)
+        else:
+            b, w, h = preprocess_image(p.read_bytes(), params.get("res_mode", "native"),
+                                       params.get("custom_w"), params.get("custom_h"),
+                                       float(params.get("native_scale", 1.0)))
+        pn = f"proc_{uuid.uuid4().hex[:10]}.png"
+        (wd / "media" / pn).write_bytes(b)
+        try:
+            shutil.copy2(wd / "media" / pn, COMFYUI_INPUT / pn)
+        except Exception as e:
+            print("[generate] copy proc to ComfyUI/input failed:", e, flush=True)
+        return pn, w, h
+
+    # frame_mode 决定接线: first->首帧口; last->尾帧口; both->首+尾 (尾帧对齐首帧画布)
+    proc_first = proc_last = None
+    tw = th = None
+    if frame_mode == "both":
+        proc_first, tw, th = _load_proc(raw_image)
+        proc_last, _, _ = _load_proc(raw_image_last, canvas=(tw, th))
+    elif frame_mode == "last":
+        proc_last, tw, th = _load_proc(raw_image)
+    elif raw_image:
+        proc_first, tw, th = _load_proc(raw_image)
+    if proc_first is None and proc_last is None:  # t2v: 画布 = custom 尺寸 (snap32 + 面积上限, 同 r2v)
+        tw = snap32(int(params.get("custom_w") or 1280))
+        th = snap32(int(params.get("custom_h") or 720))
+        if tw * th > MAX_PIXELS:
+            tw, th = compute_native_target(tw, th)
+    frames = duration_to_frames(int(params.get("duration", 5)))
     params["width"], params["height"], params["length"] = tw, th, frames
-    g = build_graph(prompt, params, proc_name, tw, th, frames)
+    g = build_graph(prompt, params, proc_first, tw, th, frames, last_image_name=proc_last)
     return await _launch_job(name, request.app["session"], params, prompt, g,
-                             proc_name, None, task_type, tw, th, frames)
+                             proc_first or proc_last, None, task_type, tw, th, frames)
 
 
 def _validate_ref_fname(fn):
