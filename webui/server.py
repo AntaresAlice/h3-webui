@@ -515,6 +515,7 @@ async def finish_job(job: dict):
         rec = {
             "id": job["gen_id"], "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "prompt": job["prompt"], "params": job["params"], "image": job["image"],
+            "image_last": job.get("image_last"),
             "video": vdest, "audio": adest, "duration": dur, "seed": job["params"].get("seed"),
             "refs": job.get("refs"), "task_type": job.get("task_type") or job["params"].get("task_type") or "i2v",
         }
@@ -929,7 +930,7 @@ async def generate(request):
     params["width"], params["height"], params["length"] = tw, th, frames
     g = build_graph(prompt, params, proc_first, tw, th, frames, last_image_name=proc_last)
     return await _launch_job(name, request.app["session"], params, prompt, g,
-                             proc_first or proc_last, None, task_type, tw, th, frames)
+                             proc_first or proc_last, None, task_type, tw, th, frames, image_last=proc_last)
 
 
 def _validate_ref_fname(fn):
@@ -1046,7 +1047,8 @@ async def _generate_r2v(request, name, data, prompt, params):
                              ref_images[0] if ref_images else None, refs_full, "r2v", cw, ch, frames)
 
 
-async def _launch_job(name, session, params, prompt, g, image_field, refs, task_type, tw, th, frames):
+async def _launch_job(name, session, params, prompt, g, image_field, refs, task_type, tw, th, frames,
+                      image_last=None):
     try:
         async with session.post(f"{COMFYUI_URL}/prompt",
                                 json={"prompt": g, "client_id": CLIENT_ID}, timeout=30) as r:
@@ -1071,7 +1073,7 @@ async def _launch_job(name, session, params, prompt, g, image_field, refs, task_
     JOBS[pid] = {
         "queue": asyncio.Queue(), "session": session, "pid": pid,
         "ws": name, "gen_id": gen_id, "params": dict(params), "prompt": prompt,
-        "image": image_field, "refs": refs, "task_type": task_type,
+        "image": image_field, "image_last": image_last, "refs": refs, "task_type": task_type,
         "status": "running", "video": None, "audio": None,
         "error": None, "t0": time.time(),
     }

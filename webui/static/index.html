@@ -697,7 +697,7 @@ const EN_MAP={
 '提示词':'Prompt','描述视频内容…（Ctrl+Enter 生成）':'Describe the video… (Ctrl+Enter to generate)','描述你想要的视频…（Ctrl+Enter 生成）':'Describe the video you want… (Ctrl+Enter to generate)','更多参数':'More params','参数已应用':'Params applied','恢复默认':'Reset defaults','应用':'Apply','生成参数':'Generation params','分辨率预览':'Resolution preview','步数':'Steps','按比例缩小最终分辨率':'Shrink final resolution proportionally',
 '关闭 (Esc)':'Close (Esc)','整段':'Whole','分栏':'Split','六段写在一个框里':'All six sections in one box','六段各一个输入框，自动拼装':'One box per section, auto-assembled',
 '工作区名称：':'Workspace name: ','工作区':'Workspace','已创建':'Created','创建失败: ':'Create failed: ','已刷新':'Refreshed',
-'参考图':'Reference image','点击或拖入图片':'Click or drag an image','点击或拖入图片（r2v 可多选 1–9 张）':'Click or drag images (r2v: multi-select 1–9)','图片已上传':'Image uploaded','上传失败: ':'Upload failed: ',
+'参考图':'Reference image','点击或拖入图片':'Click or drag an image','点击或拖入图片（r2v 可多选 1–9 张）':'Click or drag images (r2v: multi-select 1–9)','图片已上传':'Image uploaded','尾帧图已上传':'Last-frame image uploaded','首帧已上传, 再点一次图片按钮上传尾帧':'First frame uploaded — click the image button again to add the last frame','上传失败: ':'Upload failed: ',
 '删除？\n':'Delete?\n','已删除':'Deleted','删除失败':'Delete failed','无视频':'No video','正在截取最后一帧…':'Grabbing last frame…','截帧失败: ':'Frame grab failed: ','开始下载':'Download started','复用参数重试':'Retry with same params','未知错误':'Unknown error','堆栈':'Traceback','失败':'Failed','播放':'Play','复用参数':'Reuse params','续写':'Continue','下载':'Download','删除':'Delete',
 'r2v 暂不支持续写（无首帧语义）':'r2v continuation unsupported (no first-frame semantics)','r2v 模式模型锁定 ref2va':'r2v locks model to ref2va','r2v 无 native 模式（参考图不裁剪）':'r2v has no native mode (refs are not cropped)',
 '先选工作区':'Pick a workspace first','请选择图片文件':'Select an image file','请选择音频文件':'Select an audio file','最多 {n} 张参考图':'At most {n} reference images','最多 {n} 张参考图（本次取前 {m} 张）':'At most {n} ref images (taking first {m})','已满 {n} 张':'{n} full','最多 {n} 段参考音频':'At most {n} audio refs','最多 {n} 段（本次取前 {m} 段）':'At most {n} audios (taking first {m})','音频已满 {n} 段':'{n} audios full','音频上传失败: ':'Audio upload failed: ','先写提示词':'Write a prompt first','生成完成':'Done','生成失败':'Generate failed','进度连接中断, 请刷新查看结果':'Progress connection lost, refresh to check the result','已完成于工作区 {w}':'Finished in workspace {w}','清空':'Clear','草稿已暂存：可去添加素材/调整参数，再点「全屏编写」回来继续':'Draft saved: add assets / tune params, then reopen the composer to continue','仅 r2v 模式可用':'r2v mode only','已按当前 {n} 张参考图生成/替换六段式骨架':'Six-section skeleton built/replaced for your {n} ref images','六段式骨架':'Six-section skeleton','全屏编写':'Fullscreen compose','Ref2VA 提示词指南':'Ref2VA prompt guide',
@@ -814,9 +814,15 @@ function applyTask(t){
   }else{
     if(App.params.model==='ref2va')App.params.model='pruned';
     if(App.params.steps>12)App.params.steps=4;
-    // 切回 i2v: 若无单图, 取第1张参考图兜底 (参考素材仍在 refs, 可再切回)
-    if(!App.uploadedImage&&App.refsImages.length)App.uploadedImage=App.refsImages[0];
-    if(isT2V&&App.params.res_mode==='native')App.params.res_mode='custom'; // 文生无 native 语义 (无来源图)
+    if(isT2V){
+      // 文生: 无素材概念 —— 清掉从 i2v/r2v 带来的残留图并重置帧位,
+      // 否则隐藏的参考素材区无法清除, 生成会被后端 "t2v 不接受参考图" 拒绝 (死胡同)
+      App.uploadedImage=null;App.uploadedImageLast=null;App.params.frame_mode='first';
+      if(App.params.res_mode==='native')App.params.res_mode='custom'; // 文生无 native 语义 (无来源图)
+    }else{
+      // 切回 i2v: 若无单图, 取第1张参考图兜底 (参考素材仍在 refs, 可再切回)
+      if(!App.uploadedImage&&App.refsImages.length)App.uploadedImage=App.refsImages[0];
+    }
   }
   syncTaskUI();syncImgUIs();syncStudioPanel();syncPopup();updateGenBtns();updateResPreviews();
   if(App.view==='chat')syncChips();
@@ -1018,8 +1024,11 @@ function handleImg(f,target){ // target='last': 上传为首尾帧模式的尾�
   r.onload=async()=>{
     try{
       const res=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/upload-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:r.result,mime:f.type})});
-      if(target==='last')App.uploadedImageLast=res.filename;else App.uploadedImage=res.filename;
-      syncImgUIs();updateGenBtns();updateResPreviews();showToast(t('图片已上传'),'check');
+      if(target==='last'){App.uploadedImageLast=res.filename;showToast(t('尾帧图已上传'),'check');}
+      else{App.uploadedImage=res.filename;
+        if((App.params.frame_mode||'first')==='both'&&!App.uploadedImageLast)showToast(t('首帧已上传, 再点一次图片按钮上传尾帧'),'check');
+        else showToast(t('图片已上传'),'check');}
+      syncImgUIs();updateGenBtns();updateResPreviews();
     }catch(e){showToast(t('上传失败: ')+e.message,'warn');}
   };
   r.readAsDataURL(f);
@@ -1044,7 +1053,10 @@ function syncImgUIs(){
     else{sdl.classList.remove('has-img');sdl.innerHTML='<i class="fas fa-cloud-arrow-up"></i><span>'+t('点击或拖入尾帧图')+'</span>';}}
 }
 function resetImgUIs(){App.uploadedImage=null;App.uploadedImageLast=null;App.refsImages=[];App.refsAudios=[];App.refsVideos=[];App.useVideoAudio=true;syncImgUIs();syncTaskUI();updateGenBtns();updateResPreviews();if($('stRefGrid'))renderRefGrid();if($('stRefAudios'))renderRefAudios();if($('stRefVideos'))renderRefVideos();refreshComposerRefs();}
-$('chatImgFile').onchange=e=>{if(taskIsR2V()){addRefImageFiles([...e.target.files]);}else if(e.target.files[0])handleImg(e.target.files[0]);e.target.value='';};
+$('chatImgFile').onchange=e=>{if(taskIsR2V()){addRefImageFiles([...e.target.files]);}
+  else if(e.target.files[0]){const fm=App.params.frame_mode||'first'; // both 模式: 首帧已有则这次传尾帧
+    handleImg(e.target.files[0],(fm==='both'&&App.uploadedImage&&!App.uploadedImageLast)?'last':undefined);}
+  e.target.value='';};
 $('stImgFile').onchange=e=>{if(taskIsR2V()){addRefImageFiles([...e.target.files]);}else if(e.target.files[0])handleImg(e.target.files[0]);e.target.value='';};
 $('stRefFiles').onchange=e=>{addRefImageFiles([...e.target.files]);e.target.value='';};
 $('stAudAdd').onclick=()=>$('stAudFiles').click();
