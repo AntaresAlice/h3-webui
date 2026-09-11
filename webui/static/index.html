@@ -435,6 +435,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .frame-seg button{flex:1;padding:5px 0;background:var(--bg-lighter);border:none;color:var(--text-sec);font-size:10px;cursor:pointer;transition:.15s}
 .frame-seg button:hover{background:var(--bg-hover)}
 .frame-seg button.active{background:rgba(99,102,241,.18);color:#c7d2fe;font-weight:600}
+
+/* ===== 音频用途标注 ===== */
+.aud-role{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--border);background:var(--bg-lighter);color:var(--text-sec);border-radius:10px;padding:1px 6px;font-size:9.5px;cursor:pointer;flex-shrink:0;transition:.15s}
+.aud-role:hover{background:var(--bg-hover);color:var(--text)}
+.aud-role.compact{padding:1px 5px;font-size:10px}
+.aud-role i{font-size:7px;opacity:.7}
+.aud-role-menu{position:fixed;z-index:400;background:var(--bg-light);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:4px;display:flex;flex-direction:column;gap:2px;min-width:200px}
+.ar-opt{display:flex;gap:8px;align-items:center;background:transparent;border:none;color:var(--text);padding:6px 8px;border-radius:7px;cursor:pointer;text-align:left}
+.ar-opt:hover{background:var(--bg-hover)}
+.ar-opt.cur{background:rgba(99,102,241,.15)}
+.ar-ic{font-size:14px}
+.ar-t{display:flex;flex-direction:column;gap:1px}
+.ar-t b{font-size:11px;font-weight:600}
+.ar-t i{font-size:9.5px;color:var(--text-dim);font-style:normal}
+.aud-ins{border:1px solid var(--border);background:var(--bg-lighter);color:var(--text-sec);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.aud-ins:hover{background:rgba(99,102,241,.2);color:#c7d2fe}
 </style>
 </head>
 <body>
@@ -703,7 +719,7 @@ const EN_MAP={
 '官方六段式':'Official six sections','— 把每张图指派给主体':'— assign each image to a subject','— 一句话剧情':'— one-sentence story','— 必须保留的身份/服饰/细节':'— identity/outfit/details to preserve','— 动作·机位·运镜（主体发挥区）':'— action·camera·moves (subject performance)','— 环境音':'— ambience','— 配乐，无则 N/A':'— music, or N/A','按当前 {n} 张图生成骨架':'Generate skeleton for current {n} images','示例库（载入即用）':'Examples (load & use)','需 {n} 图':'needs {n} imgs','载入示例':'Load example','红线速查':'Red lines',
 // P3 视频参考
 '添加参考视频（≤3 段, 2–15s）':'Add video refs (≤3, 2–15s each)','使用视频原声':'Use video soundtrack','视频':'Videos','含音轨':'has audio','请选择视频文件':'Select a video file','最多 {n} 段参考视频':'At most {n} video refs','最多 {n} 段参考视频（本次取前 {m} 段）':'At most {n} video refs (taking first {m})','视频上传失败: ':'Video upload failed: ','视频已满 {n} 段':'{n} videos full','参考视频总时长 {s}s 超过 15s, 生成会被拒绝':'Video refs total {s}s exceeds 15s; generation will be rejected','参考视频总时长 {s}s 超过 15s 上限':'Video refs total {s}s exceeds the 15s limit','参考素材总数 (图+视频+音频) 不能超过 12 个':'Total refs (images+videos+audios) cannot exceed 12','上传参考图或视频（r2v, 图≤9 视频≤3）':'Upload reference images or videos (r2v, ≤9 imgs ≤3 videos)','提示词引用了 <Video {n}>, 但只上传了 {c} 段参考视频':'Prompt references <Video {n}>, but only {c} videos uploaded','提示词引用了 <Audio {n}>, 但可用音频编号只有 {c} 个':'Prompt references <Audio {n}>, but only {c} audio ordinals available','<Video {n}> 越界：当前只上传了 {c} 段参考视频':'<Video {n}> out of range: only {c} videos uploaded','<Audio {n}> 越界：当前可用音频编号只有 {c} 个':'<Audio {n}> out of range: only {c} audio ordinals available','视频:':'Videos:',
-'图/视频按上传顺序编号：图用 <b>&lt;Picture N&gt;</b>（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;），视频 ≤3 段（每段 2–15s, 总 ≤15s）用 <b>&lt;Video N&gt;</b> 引用（剪辑/续写/运镜参考）。可选加 <b>&lt;=3 段音频</b>，用 <b>&lt;Audio N&gt;</b> 引用（含视频原声, 音轨编号先于独立音频）':'Images/videos are numbered by upload order: images via <b>&lt;Picture N&gt;</b> (subjects via <b>&lt;Subject N&gt;</b>, never &lt;Object x&gt;); videos ≤3 (2–15s each, ≤15s total) via <b>&lt;Video N&gt;</b> (editing/continuation/camera reference). Optional ≤3 audios via <b>&lt;Audio N&gt;</b> (incl. video soundtracks; soundtrack ordinals come before standalone audios)','<code>&lt;Picture N&gt;</code> 最大编号 ≤ 已传图数':'<code>&lt;Picture N&gt;</code> max number ≤ uploaded images','主体编号从 1 连续，禁止跳号':'Subject numbers consecutive from 1, no gaps','禁止 <code>&lt;Object x&gt;</code>':'No <code>&lt;Object x&gt;</code>','对白原文进 <code>&lt;d&gt;</code>，别翻译':'Original dialogue goes into <code>&lt;d&gt;</code>; do not translate','无 native 分辨率：画布 = 自定义尺寸':'No native resolution: canvas = custom size','示例库（按素材组合 × 语义解读）':'Examples (by material combo × interpretation)','t2v 文字':'t2v text-only','首帧':'First frame','尾帧':'Last frame','首尾帧':'First + last','纯文字描述 → 音视频（T8 链, 无需素材）':'Text only → audio-visual (T8 chain, no assets)','点击或拖入尾帧图':'Click or drop the last-frame image','尾帧图（视频结尾画面）':'Last-frame image (the ending shot)','首帧图':'First-frame image','i2v·尾帧':'i2v·last','i2v·首尾帧':'i2v·first+last','已按当前素材生成/替换六段式骨架（{i} 图 · {v} 视频）':'Skeleton regenerated from current refs ({i} imgs · {v} videos)','已载入示例「{name}」, 还缺素材: {lack}':'Example "{name}" loaded; missing refs: {lack}','匹配你的素材':'matches your refs','全部':'All','1图':'1 img','2图':'2 imgs','图+音频':'img+audio','视频+图':'video+img','视频+音频':'video+audio','双主体·互动':'Two subjects · interaction','主体 + 环境':'Subject + environment','动作与运镜':'Action & camera','台词口播':'Talking head script','音色台词':'Voice & dialogue','视频续写':'Video continuation','主体植入':'Subject insertion','动作/运镜参考':'Motion/camera reference','声音接管':'Voice takeover','<b>P1=脸 P2=全身</b> —— 同一个人，身份与服饰完全保留':'<b>P1=face P2=full body</b> — same person, identity & outfit fully kept','<b>P1/P2=两个主体</b> —— 各写保留条目，主体间交互':'<b>P1/P2=two subjects</b> — separate retention entries, subject interaction','<b>P1=人物 P2=场景</b> —— 身份保留，环境仅作参考':'<b>P1=person P2=scene</b> — identity kept, environment as reference only','单主体表演，示范 <b>动作/机位/运镜</b> 的具体写法':'Single-subject performance; demonstrates concrete <b>action/camera/movement</b> writing','单主体对镜头说话，<b>(S1)</b> + 多句 <b>&lt;d&gt;</b> 台词':'Single subject talks to camera; <b>(S1)</b> + multi-line <b>&lt;d&gt;</b> dialogue','音色来自音频，主体开口说 <b>&lt;d&gt;</b> 台词':'Voice timbre from audio; subject speaks <b>&lt;d&gt;</b> lines','从视频结尾接着演，<b>画面全保留</b>，无需参考图':'Continue right after the video; <b>visuals fully kept</b>, no images needed','<b>图中主体进入视频场景</b>，运镜节奏部分保留':'<b>Image subject enters the video scene</b>; camera pacing partially kept','<b>图中人物照视频动作演</b>，动作与时间结构仅参考':'<b>Image subject follows the video moves</b>; motion & timing as reference only','画面沿用视频，<b>音色/台词来自音频</b>':'Visuals from the video; <b>voice/lines from the audio</b>','已上传 {a}/9 张参考图':'{a}/9 reference images uploaded','未选工作区':'No workspace selected','已载入示例「{name}」，还需 {n} 张参考图':'Example "{name}" loaded; need {n} more reference images','已载入示例「{name}」':'Example "{name}" loaded','{n} 字':'{n} chars','语法 OK · 与 {a} 张参考图':'Syntax OK · matches {a} reference image(s)',' + {b} 段音频':' + {b} audio clip(s)',' 匹配（生成前仍会终检）':' (final check still runs before generation)',
+'图/视频按上传顺序编号：图用 <b>&lt;Picture N&gt;</b>（主体用 <b>&lt;Subject N&gt;</b>，勿用 &lt;Object x&gt;），视频 ≤3 段（每段 2–15s, 总 ≤15s）用 <b>&lt;Video N&gt;</b> 引用（剪辑/续写/运镜参考）。可选加 <b>&lt;=3 段音频</b>，用 <b>&lt;Audio N&gt;</b> 引用（含视频原声, 音轨编号先于独立音频）':'Images/videos are numbered by upload order: images via <b>&lt;Picture N&gt;</b> (subjects via <b>&lt;Subject N&gt;</b>, never &lt;Object x&gt;); videos ≤3 (2–15s each, ≤15s total) via <b>&lt;Video N&gt;</b> (editing/continuation/camera reference). Optional ≤3 audios via <b>&lt;Audio N&gt;</b> (incl. video soundtracks; soundtrack ordinals come before standalone audios)','<code>&lt;Picture N&gt;</code> 最大编号 ≤ 已传图数':'<code>&lt;Picture N&gt;</code> max number ≤ uploaded images','主体编号从 1 连续，禁止跳号':'Subject numbers consecutive from 1, no gaps','禁止 <code>&lt;Object x&gt;</code>':'No <code>&lt;Object x&gt;</code>','对白原文进 <code>&lt;d&gt;</code>，别翻译':'Original dialogue goes into <code>&lt;d&gt;</code>; do not translate','无 native 分辨率：画布 = 自定义尺寸':'No native resolution: canvas = custom size','示例库（按素材组合 × 语义解读）':'Examples (by material combo × interpretation)','音色':'Voice','原声':'As-is','音乐':'Music','学它说话的音色（说新台词）':'Learn this voice (speaks new lines)','原样使用这段声音':'Use this exact audio','当背景音乐铺底':'Use as the BGM bed','音频角色':'Audio role','音频角色已设为: {r}':'Audio role set to: {r}','插入引用句':'Insert reference line','有音频标注为 原声/音乐: 提示词开头需加 [audio reuse] 前缀':'An audio is marked as-is/music — add the [audio reuse] prefix at the top','t2v 文字':'t2v text-only','首帧':'First frame','尾帧':'Last frame','首尾帧':'First + last','纯文字描述 → 音视频（T8 链, 无需素材）':'Text only → audio-visual (T8 chain, no assets)','点击或拖入尾帧图':'Click or drop the last-frame image','尾帧图（视频结尾画面）':'Last-frame image (the ending shot)','首帧图':'First-frame image','i2v·尾帧':'i2v·last','i2v·首尾帧':'i2v·first+last','已按当前素材生成/替换六段式骨架（{i} 图 · {v} 视频）':'Skeleton regenerated from current refs ({i} imgs · {v} videos)','已载入示例「{name}」, 还缺素材: {lack}':'Example "{name}" loaded; missing refs: {lack}','匹配你的素材':'matches your refs','全部':'All','1图':'1 img','2图':'2 imgs','图+音频':'img+audio','视频+图':'video+img','视频+音频':'video+audio','双主体·互动':'Two subjects · interaction','主体 + 环境':'Subject + environment','动作与运镜':'Action & camera','台词口播':'Talking head script','音色台词':'Voice & dialogue','视频续写':'Video continuation','主体植入':'Subject insertion','动作/运镜参考':'Motion/camera reference','声音接管':'Voice takeover','<b>P1=脸 P2=全身</b> —— 同一个人，身份与服饰完全保留':'<b>P1=face P2=full body</b> — same person, identity & outfit fully kept','<b>P1/P2=两个主体</b> —— 各写保留条目，主体间交互':'<b>P1/P2=two subjects</b> — separate retention entries, subject interaction','<b>P1=人物 P2=场景</b> —— 身份保留，环境仅作参考':'<b>P1=person P2=scene</b> — identity kept, environment as reference only','单主体表演，示范 <b>动作/机位/运镜</b> 的具体写法':'Single-subject performance; demonstrates concrete <b>action/camera/movement</b> writing','单主体对镜头说话，<b>(S1)</b> + 多句 <b>&lt;d&gt;</b> 台词':'Single subject talks to camera; <b>(S1)</b> + multi-line <b>&lt;d&gt;</b> dialogue','音色来自音频，主体开口说 <b>&lt;d&gt;</b> 台词':'Voice timbre from audio; subject speaks <b>&lt;d&gt;</b> lines','从视频结尾接着演，<b>画面全保留</b>，无需参考图':'Continue right after the video; <b>visuals fully kept</b>, no images needed','<b>图中主体进入视频场景</b>，运镜节奏部分保留':'<b>Image subject enters the video scene</b>; camera pacing partially kept','<b>图中人物照视频动作演</b>，动作与时间结构仅参考':'<b>Image subject follows the video moves</b>; motion & timing as reference only','画面沿用视频，<b>音色/台词来自音频</b>':'Visuals from the video; <b>voice/lines from the audio</b>','已上传 {a}/9 张参考图':'{a}/9 reference images uploaded','未选工作区':'No workspace selected','已载入示例「{name}」，还需 {n} 张参考图':'Example "{name}" loaded; need {n} more reference images','已载入示例「{name}」':'Example "{name}" loaded','{n} 字':'{n} chars','语法 OK · 与 {a} 张参考图':'Syntax OK · matches {a} reference image(s)',' + {b} 段音频':' + {b} audio clip(s)',' 匹配（生成前仍会终检）':' (final check still runs before generation)',
 '<Picture {n}> 越界：当前只上传了 {c} 张参考图':'<Picture {n}> out of range: only {c} reference images uploaded','<Audio {n}> 越界：当前只上传了 {c} 段音频':'<Audio {n}> out of range: only {c} audio clips uploaded','官方语法禁止 <Object x>，请改用 <Subject N> 连续编号':'Official syntax forbids <Object x>; use consecutive <Subject N> from 1','<Subject {k}> 缺失：主体编号需从 1 连续（现有最大 {m}）':'<Subject {k}> missing: subject numbers must be consecutive from 1 (current max {m})','字数 {n}/4000 超限':'Length {n}/4000 exceeded',
 '插入官方六段式骨架':'Insert official six-section skeleton','图片按上传顺序编号：':'Images numbered by upload order:','提示词中可多次引用同一张':'the same image may be referenced multiple times','主体（人/物）必须用':'Subjects (people/objects) must use','定义并从 1 连续编号':'defined and numbered consecutively from 1','禁止':'forbidden','音频按上传顺序用':'Audios referenced by upload order as','引用（≤3 段, 每段 2–15s, 总 ≤15s）':'referenced (≤3 clips, 2–15s each, ≤15s total)','音色句式':'voice-timbre sentence','注明参考音色、不复制原话':'state the timbre reference; do not copy the original wording','音频参考用':'audio refs use','标注说话主体':'marks the speaker','台词原文用':'original line goes in','台词原文':'original line','对白不翻译':'never translate dialogue','提示词 ≤4000 字符':'prompt ≤4000 chars','音频参考每段 2–15s、≤3 段、总时长 ≤15s':'audio refs 2–15s each, ≤3 clips, ≤15s total','总长限制':'Length limits','说话人':'Speaker','引用语法':'Reference syntax','身份保持句式':'Identity sentence',
 '先上传参考图':'Upload a reference image first','参数':'Params','4 步':'4 steps','×{n}图':'×{n} imgs','提示词编辑':'Prompt editor','Ctrl+Enter 生成':'Ctrl+Enter to generate','剪枝 pruned（快·19.5G）':'pruned (fast · 19.5G)','完整 full（质量·31G）':'full (quality · 31G)','Ref2VA 参考（多素材）':'Ref2VA reference (multi-asset)','剪枝 pruned（快）':'pruned (fast)','完整 full（质量）':'full (quality)','Ref2VA 提示词编辑器':'Ref2VA prompt composer','编辑内容实时同步 · 「应用」= 暂存草稿并关闭（不加素材/调参后再回来）':'Edits sync live · Apply = stash the draft and close (come back after adding assets / tuning params)','编写 Ref2VA 提示词… 点上方 token / 右侧缩略图可在光标处插入；或点「六段式骨架」按当前素材数生成模板':'Write the Ref2VA prompt… click tokens above / thumbnails on the right to insert at the cursor; or click Six-section skeleton to build a template for your current assets','MiniMax-H3 视频生成':'MiniMax-H3 Video Generation',
@@ -845,6 +861,43 @@ function syncTaskUI(){
   if(r2v){const tip=$('stTaskTip');if(tip&&miss)tip.textContent=t('⚠ ref2va 权重未检测到（{m}），生成会被 ComfyUI 拒绝',{m:(App.settings.ref2va_model||'?')});}
 }
 
+// ===== 音频用途标注 (P3.5): 音色/原声/音乐 —— 纯提示词语义, 不影响构图 =====
+const AUDIO_ROLES=[
+  {k:'voice',icon:'\u{1F399}\uFE0F',label:'音色',desc:'学它说话的音色（说新台词）'},
+  {k:'copy',icon:'\u{1F501}',label:'原声',desc:'原样使用这段声音'},
+  {k:'bgm',icon:'\u{1F3B5}',label:'音乐',desc:'当背景音乐铺底'},
+];
+function audioRoleOf(a){return AUDIO_ROLES.find(r=>r.k===((a&&a.role)||'voice'))||AUDIO_ROLES[0];}
+function audioRolePill(i,compact){const r=audioRoleOf(App.refsAudios[i]);
+  return `<button class="aud-role${compact?' compact':''}" data-i="${i}" title="${t('音频角色')}: ${t(r.desc)}">${r.icon}${compact?'':'<span>'+t(r.label)+'</span>'}<i class="fas fa-chevron-down"></i></button>`;}
+function closeAudRoleMenu(){const m=$('audRoleMenu');if(m)m.remove();document.removeEventListener('click',audRoleOutside,true);}
+function audRoleOutside(e){const m=$('audRoleMenu');if(m&&!m.contains(e.target)&&!e.target.closest('.aud-role'))closeAudRoleMenu();}
+function openAudRoleMenu(i,btn){
+  closeAudRoleMenu();
+  const cur=App.refsAudios[i].role||'voice';
+  const m=document.createElement('div');m.id='audRoleMenu';m.className='aud-role-menu';
+  m.innerHTML=AUDIO_ROLES.map(r=>`<button class="ar-opt${r.k===cur?' cur':''}" data-k="${r.k}"><span class="ar-ic">${r.icon}</span><span class="ar-t"><b>${t(r.label)}</b><i>${t(r.desc)}</i></span></button>`).join('');
+  document.body.appendChild(m);
+  const rc=btn.getBoundingClientRect();
+  m.style.top=(rc.bottom+4)+'px';
+  m.style.left=Math.max(6,Math.min(rc.left,window.innerWidth-214))+'px';
+  m.querySelectorAll('.ar-opt').forEach(o=>o.onclick=()=>{
+    App.refsAudios[i].role=o.dataset.k;closeAudRoleMenu();
+    renderRefAudios();refreshComposerRefs();
+    showToast(t('音频角色已设为: {r}',{r:t(AUDIO_ROLES.find(r=>r.k===o.dataset.k).label)}),'check');
+  });
+  setTimeout(()=>document.addEventListener('click',audRoleOutside,true),0);
+}
+function audioRefLines(i){ // 按角色生成该音频的引用句 (composer「插入引用句」用)
+  const an=audioOrdinalBase()+i+1;const role=App.refsAudios[i].role||'voice';
+  const n=Math.min(App.refsImages.length,9);
+  if(role==='voice'){const m=n>=1?((i%n)+1):0;
+    return m?`<Audio ${an}> is the voice-timbre reference for <Subject ${m}> (S${m}).`
+            :`<Audio ${an}> is the voice-timbre reference for the on-screen speaker.`;}
+  if(role==='copy')return `<Audio ${an}>: fully_copy - use this exact audio in the output.`;
+  return `<Audio ${an}> (background music): fully_copy - keep it as the music bed.`;
+}
+
 // ===== r2v 多图上传 (Studio 9 格 + chat 逐张追加) =====
 async function addRefImageFiles(files){
   if(!App.curWs){showToast(t('先选工作区'),'warn');return;}
@@ -896,7 +949,7 @@ async function addRefAudioFiles(files){
     try{
       const fd=new FormData();fd.append('type','audio');fd.append('file',f,f.name);
       const res=await api('/api/workspaces/'+encodeURIComponent(App.curWs)+'/upload-media',{method:'POST',body:fd});
-      App.refsAudios.push({fn:res.filename,dur:res.duration_s});
+      App.refsAudios.push({fn:res.filename,dur:res.duration_s,role:'voice'});
       renderRefAudios();updateGenBtns();
     }catch(e){showToast(t('音频上传失败: ')+e.message,'warn');break;}
   }
@@ -907,8 +960,9 @@ function renderRefAudios(){
   const box=$('stRefAudios');if(!box)return;
   const r2v=taskIsR2V()&&App.curWs;
   box.style.display=(r2v&&App.refsAudios.length)?'flex':'none';
-  box.innerHTML=App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${audioOrdinalBase()+i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><span class="fn">${esc(a.fn)}</span><button class="r2v-aud-del" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('');
+  box.innerHTML=App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${audioOrdinalBase()+i+1}&gt;</span>${audioRolePill(i,true)}<audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><span class="fn">${esc(a.fn)}</span><button class="r2v-aud-del" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('');
   box.querySelectorAll('.r2v-aud-del').forEach(b=>b.onclick=()=>{App.refsAudios.splice(+b.dataset.i,1);renderRefAudios();updateGenBtns();refreshComposerRefs();});
+  box.querySelectorAll('.aud-role').forEach(b=>b.onclick=e=>{e.stopPropagation();openAudRoleMenu(+b.dataset.i,b);});
 }
 // P3: 视频原声占用的 <Audio N> 序号数 (官方 conditioning 顺序: 图 -> 视频(音轨标签先于视频) -> 独立音频)
 function audioOrdinalBase(){return (taskIsR2V()&&App.useVideoAudio)?App.refsVideos.filter(v=>v.aud).length:0;}
@@ -1189,12 +1243,12 @@ async function generate(){
   if(App.view==='chat')collectPopup();if(App.view==='studio')collectStudioPanel();
   setGenBusy(true);
   const gid='tmp-'+Date.now();const t0=Date.now();
-  const tmp={id:gid,ws:App.curWs,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,image_last:(!taskIsR2V()&&(App.params.frame_mode||'first')==='both')?App.uploadedImageLast:null,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:App.refsVideos.map(v=>v.fn),video_audios:App.refsVideos.filter(v=>App.useVideoAudio&&v.aud).map(v=>v.fn)}:null,status:'running',_pct:0,_phase:t('提交中'),_t0:t0};
+  const tmp={id:gid,ws:App.curWs,timestamp:timeNow(),prompt,params:{...App.params,width:App.params.custom_w,height:App.params.custom_h},image:taskIsR2V()?App.refsImages[0]:App.uploadedImage,image_last:(!taskIsR2V()&&(App.params.frame_mode||'first')==='both')?App.uploadedImageLast:null,task_type:App.params.task_type,refs:taskIsR2V()?{images:[...App.refsImages],audios:App.refsAudios.map(a=>a.fn),videos:App.refsVideos.map(v=>v.fn),video_audios:App.refsVideos.filter(v=>App.useVideoAudio&&v.aud).map(v=>v.fn),audio_roles:App.refsAudios.reduce((o,a)=>(o[a.fn]=(a.role||'voice'),o),{})}:null,status:'running',_pct:0,_phase:t('提交中'),_t0:t0};
   App.gens.unshift(tmp);App.currentGen=tmp;renderActive();
   genTimer=setInterval(()=>{tmp._elapsed=Math.floor((Date.now()-t0)/1000);const e=$('stElapsed');if(e)e.textContent=tmp._elapsed+'s';},500);
   try{
     const body=taskIsR2V()
-      ? {prompt,params:App.params,refs:{images:App.refsImages,audios:App.refsAudios.map(a=>a.fn),videos:App.refsVideos.map(v=>v.fn),use_video_audio:App.useVideoAudio}}
+      ? {prompt,params:App.params,refs:{images:App.refsImages,audios:App.refsAudios.map(a=>a.fn),videos:App.refsVideos.map(v=>v.fn),use_video_audio:App.useVideoAudio,audio_roles:App.refsAudios.reduce((o,a)=>(o[a.fn]=(a.role||'voice'),o),{})}}
       : (()=>{const fm=App.params.frame_mode||'first';
           const b={prompt,params:App.params,frame_mode:fm};
           if(App.uploadedImage)b.image=App.uploadedImage;
@@ -1410,7 +1464,7 @@ function reuseParams(g, opts={}){
   if(r2v){
     App.refsImages=((g.refs&&g.refs.images)||[]).slice();
     if(!App.refsImages.length&&g.image)App.refsImages=[g.image];
-    App.refsAudios=((g.refs&&g.refs.audios)||[]).map(fn=>({fn,dur:null}));
+    App.refsAudios=((g.refs&&g.refs.audios)||[]).map(fn=>({fn,dur:null,role:(g.refs&&g.refs.audio_roles&&g.refs.audio_roles[fn])||'voice'}));
     App.refsVideos=((g.refs&&g.refs.videos)||[]).map(fn=>({fn,dur:null,aud:((g.refs&&g.refs.video_audios)||[]).includes(fn)}));
     App.useVideoAudio=(g.refs&&g.refs.use_video_audio)!==false; // 历史记录缺省视为开启
     App.uploadedImage=null;
@@ -1743,7 +1797,23 @@ function sixSkeletonFor(count,vidCount=0){
     defs.push(`<Video ${k}> is the source video (editing source / continuation start / temporal-structure reference).`);
     rets.push(`<Video ${k}> (editing source and temporal structure): fully_preserved - follow its framing, pacing and continuity.`);
   }
-  return `subject_definitions:
+  // P3.5: 参考音频 -> <Audio N> 按用途角色 (音色/原声/音乐)
+  const ab=audioOrdinalBase();
+  App.refsAudios.forEach((a,k)=>{
+    const an=ab+k+1;const role=a.role||'voice';
+    if(role==='voice'){
+      const m=n>=1?((k%n)+1):0;
+      defs.push(m?`<Audio ${an}> is the voice-timbre reference for <Subject ${m}> (S${m}).`
+                 :`<Audio ${an}> is the voice-timbre reference for the on-screen speaker.`);
+      rets.push(`<Audio ${an}>: the speaking voice must match its timbre and pitch.`);
+    }else if(role==='copy'){
+      rets.push(`<Audio ${an}>: fully_copy - use this exact audio in the output.`);
+    }else{
+      rets.push(`<Audio ${an}> (background music): fully_copy - keep it as the music bed.`);
+    }
+  });
+  const reusePrefix=App.refsAudios.some(a=>(a.role||'voice')!=='voice')?'[audio reuse]\n':'';
+  return `${reusePrefix}subject_definitions:
 ${defs.join('\n')}
 
 summary:
@@ -1969,7 +2039,7 @@ function renderComposerSide(){
     h+='<div class="c-pics" style="margin-top:7px">'+App.refsVideos.map((v,i)=>`<button class="c-pic" data-vid="${i}" title="${esc('<Video '+(i+1)+'>')}"><video muted preload="metadata" src="${mediaUrl('',v.fn)}#t=0.1"></video><span>&lt;Video ${i+1}&gt;</span></button>`).join('')+'</div>';
   }
   if(App.refsAudios.length){
-    h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">'+App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${audioOrdinalBase()+i+1}&gt;</span><audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><button class="r2v-aud-del c" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('')+'</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">'+App.refsAudios.map((a,i)=>`<div class="r2v-aud-row" title="${esc(a.fn)}"><span class="tag">&lt;Audio ${audioOrdinalBase()+i+1}&gt;</span>${audioRolePill(i,false)}<audio controls preload="none" src="${mediaUrl('',a.fn)}"></audio><span class="dur">${a.dur!=null?a.dur+'s':'…'}</span><button class="aud-ins" data-i="${i}" title="${t('插入引用句')}"><i class="fas fa-quote-right"></i></button><button class="r2v-aud-del c" data-i="${i}" title="${t('删除')}"><i class="fas fa-xmark"></i></button></div>`).join('')+'</div>';
   }
   if(App.refsAudios.length<R2V_MAX_AUDIOS)h+='<button class="btn" id="cAudAdd" style="margin-top:6px"><i class="fas fa-microphone"></i> '+t('添加参考音频（≤3 段, 2–15s/段）')+'</button>';
   h+='</div>';
@@ -2022,6 +2092,8 @@ function renderComposerSide(){
   side.querySelectorAll('.c-pic[data-vid]').forEach(b=>b.onclick=()=>insToken('<Video '+(+b.dataset.vid+1)+'>'));
   const am=$('cAddMedia');if(am)am.onclick=()=>$('cRefFiles').click();
   side.querySelectorAll('.r2v-aud-del.c').forEach(b=>b.onclick=()=>{App.refsAudios.splice(+b.dataset.i,1);renderRefAudios();updateGenBtns();refreshComposerRefs();});
+  side.querySelectorAll('.aud-role').forEach(b=>b.onclick=e=>{e.stopPropagation();openAudRoleMenu(+b.dataset.i,b);});
+  side.querySelectorAll('.aud-ins').forEach(b=>b.onclick=()=>insToken(audioRefLines(+b.dataset.i)));
   const aa=$('cAudAdd');if(aa)aa.onclick=()=>$('cAudFiles').click();
 }
 function loadExample(i){
@@ -2040,6 +2112,8 @@ function r2vLiveIssues(prompt){
   const refs=App.refsImages.length,auds=App.refsAudios.length,vids=App.refsVideos.length;const issues=[];
   const pics=[...prompt.matchAll(/<Picture\s+(\d+)\s*>/g)].map(m=>+m[1]);
   if(pics.length&&Math.max(...pics)>refs)issues.push({t:'err',m:t('<Picture {n}> 越界：当前只上传了 {c} 张参考图',{n:Math.max(...pics),c:refs})});
+  if(App.refsAudios.some(a=>(a.role||'voice')!=='voice')&&!/\[audio reuse\]/i.test(prompt||''))
+    issues.push({t:'warn',m:t('有音频标注为 原声/音乐: 提示词开头需加 [audio reuse] 前缀')});
   const vds=[...prompt.matchAll(/<Video\s+(\d+)\s*>/g)].map(m=>+m[1]);
   if(vds.length&&Math.max(...vds)>vids)issues.push({t:'err',m:t('<Video {n}> 越界：当前只上传了 {c} 段参考视频',{n:Math.max(...vds),c:vids})});
   const ab=audioOrdinalBase();

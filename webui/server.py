@@ -967,6 +967,12 @@ async def _generate_r2v(request, name, data, prompt, params):
     missing_a = [f for f in ref_audios if not (wd / "media" / f).exists()]
     if missing_a:
         raise web.HTTPBadRequest(text=f"参考音频不存在, 请重新上传: {', '.join(missing_a[:3])}")
+    # P3.5: 音频用途标注 (voice/copy/bgm) —— 纯提示词语义, 不影响构图; 仅校验枚举并入历史
+    audio_roles = refs.get("audio_roles") or {}
+    if not isinstance(audio_roles, dict) or any(
+            not isinstance(v, str) or v not in ("voice", "copy", "bgm") for v in audio_roles.values()):
+        raise web.HTTPBadRequest(text="audio_roles 必须是 {文件名: voice/copy/bgm}")
+    audio_roles = {f: audio_roles[f] for f in ref_audios if f in audio_roles}
     total_audio_s = 0.0
     for af in ref_audios:  # 逐段 2–15s 上传时已校验, 这里兜底复核可解码 + 总时长 ≤15s
         info = _probe_media(wd / "media" / af)
@@ -1034,6 +1040,7 @@ async def _generate_r2v(request, name, data, prompt, params):
                  "audios": ref_audios,
                  "videos": ref_videos,
                  "use_video_audio": use_video_audio,
+                 "audio_roles": audio_roles,
                  "video_audios": [vf for vf, f in zip(ref_videos, video_audio_flags) if f]}
     return await _launch_job(name, request.app["session"], params, prompt, g,
                              ref_images[0] if ref_images else None, refs_full, "r2v", cw, ch, frames)
