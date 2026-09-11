@@ -102,9 +102,11 @@ run_webui.bat            :: 使用默认 ComfyUI 根目录
 run_webui.bat D:\ComfyUI :: 指定你的 ComfyUI 根目录
 ```
 
-脚本自动完成：检查 8080（已在跑则直接开浏览器）→ 检查 8188（未跑则后台拉起 ComfyUI 并等待就绪）→ 启动 WebUI → 打开浏览器 `http://127.0.0.1:8080`。
+脚本自动完成：**先挑选可用端口**（默认 8080；被系统保留或已占用时自动顺延到 8081、8082…）→ 该端口上已有 WebUI 则直接开浏览器 → 检查 8188（未跑则后台拉起 ComfyUI 并等待就绪）→ 启动 WebUI → 打开浏览器。**每一步都会打印日志**（端口挑选过程、ComfyUI 检查、启动命令与端口），不会静默等待。
 
 > ComfyUI 根目录也可用环境变量 `H3_COMFY_ROOT` 指定；默认 `D:\ComfyUI`。
+>
+> Windows 上 Hyper-V / WSL / winnat 会预留“排除端口段”，落在其中的端口（本机常见 8080）即使没人监听也绑不上，报 `winerror 10013`。启动脚本用真实 bind 探测并自动换端口；也可 `set H3WEBUI_PORT=8081` 固定端口。
 
 ### 方式二：手动启动
 
@@ -118,7 +120,7 @@ cd /d <本仓库目录>
 D:\ComfyUI\python_embeded\python.exe webui\server.py
 ```
 
-浏览器打开 **http://127.0.0.1:8080** 即可使用。
+浏览器打开 **http://127.0.0.1:8080**（或上一步脚本实际选中的端口）即可使用。
 
 ### 使用流程
 
@@ -183,8 +185,9 @@ COMFYUI_OUTPUT=/path/to/ComfyUI/output \
 | `COMFYUI_INPUT` | 自动探测（`<python>/../../ComfyUI/input`） | ComfyUI input 目录（上传图/截帧会复制到这里） |
 | `COMFYUI_OUTPUT` | 自动探测（`<python>/../../ComfyUI/output`） | ComfyUI output 目录 |
 | `H3WEBUI_HOST` | `127.0.0.1` | WebUI 监听地址 |
-| `H3WEBUI_PORT` | `8080` | WebUI 监听端口 |
+| `H3WEBUI_PORT` | `8080` | WebUI 监听端口；`run_webui.bat` 会从该端口起自动找可绑定的端口 |
 | `H3_COMFY_ROOT` | `D:\ComfyUI` | （仅 `run_webui.bat` 用）ComfyUI 根目录 |
+| `H3_NO_BROWSER` | 未设置 | （仅 `run_webui.bat` 用）设为 `1` 时不自动打开浏览器，只在控制台打印 URL |
 
 ---
 
@@ -224,12 +227,14 @@ COMFYUI_OUTPUT=/path/to/ComfyUI/output \
 │   └── workspaces/          # 运行期生成，不入库（.gitignore）
 │       └── <工作区>/generations.json + media/
 └── scripts/
+    ├── pick_port.ps1        # Windows：为 run_webui.bat 挑选可绑定的 WebUI 端口
     ├── h3_i2v_smoke.py      # 冒烟测试：i2v（直连 ComfyUI API 验证端到端链路，可选）
     ├── h3_r2v_smoke.py      # 冒烟测试：r2v 多图参考核心链（--input-dir 可自动生成测试图）
     ├── p2_audio_smoke.py    # 冒烟测试：r2v 音频参考（上传/校验/生成，含负例）
-    ├── p3_video_ref_smoke.py # 冒烟测试：r2v 视频参考（构图接线 / 上传与生成边界）
     ├── e2e_r2v_test.py      # 端到端测试：r2v 完整出片
-    └── sse_progress_check.py # SSE 进度核对脚本
+    ├── sse_progress_check.py  # SSE 进度核对脚本
+    ├── sse_latch_selftest.py  # SSE 收尾/闩锁自测
+    └── i18n_coverage_check.js # 前端 i18n 文案覆盖率检查（zh/en 键对齐）
 ```
 
 > 前端无任何构建步骤 —— `index.html` 即全部，改完刷新即生效。
@@ -246,6 +251,9 @@ COMFYUI_OUTPUT=/path/to/ComfyUI/output \
 
 **Q: 显示"ComfyUI 拒绝"？**
 多为模型文件未放入对应 `ComfyUI/models/` 目录（错误信息会附节点级提示），或节点参数无效。
+
+**Q: 启动 WebUI 报 `winerror 10013`（无法监听 8080）？**
+8080 被 Windows 的“排除端口段”预留了（Hyper-V / WSL / winnat），此时用 `netstat` 看不到任何占用，所以容易被误判成权限问题。`run_webui.bat` 会用真实 bind 探测并自动顺延到下一个可用端口；手动启动可 `set H3WEBUI_PORT=8081`。查看系统预留：`netsh interface ipv4 show excludedportrange protocol=tcp`。
 
 **Q: 分辨率为什么不完全是自定义的值？**
 H3 要求宽高为 32 倍数且面积 ≤ 1920×1088，后端会按模式自动裁剪/缩放（native 模式另有缩放滑条）。

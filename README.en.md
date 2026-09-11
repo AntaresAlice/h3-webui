@@ -102,9 +102,11 @@ run_webui.bat            :: default ComfyUI root
 run_webui.bat D:\ComfyUI :: specify your ComfyUI root
 ```
 
-The script automatically: checks 8080 (opens the browser if already running) → checks 8188 (starts ComfyUI in the background and waits until ready if not running) → starts the WebUI → opens `http://127.0.0.1:8080`.
+The script automatically: **picks a usable port first** (default 8080; if it is reserved by Windows or already taken it moves on to 8081, 8082, …) → opens the browser if a WebUI already answers on that port → checks 8188 (starts ComfyUI in the background and waits until ready if not running) → starts the WebUI → opens the browser. **Every step prints a log line** (port picking, ComfyUI check, start command and port), so it never waits silently.
 
 > The ComfyUI root can also be set via the `H3_COMFY_ROOT` environment variable; default `D:\ComfyUI`.
+>
+> On Windows, Hyper-V / WSL / winnat reserve “excluded port ranges”; a port inside one (commonly 8080) cannot be bound even when nothing is listening, failing with `winerror 10013`. The launcher probes with a real bind and shifts to the next free port; you can also pin one with `set H3WEBUI_PORT=8081`.
 
 ### Option 2: Manual start
 
@@ -118,7 +120,7 @@ cd /d <this repo>
 D:\ComfyUI\python_embeded\python.exe webui\server.py
 ```
 
-Open **http://127.0.0.1:8080** in your browser.
+Open **http://127.0.0.1:8080** (or whichever port the launcher picked) in your browser.
 
 ### Usage flow
 
@@ -183,8 +185,9 @@ Everything is overridden by **environment variables** — no config file:
 | `COMFYUI_INPUT` | auto-detected (`<python>/../../ComfyUI/input`) | ComfyUI input dir (uploaded images / extracted frames are copied here) |
 | `COMFYUI_OUTPUT` | auto-detected (`<python>/../../ComfyUI/output`) | ComfyUI output dir |
 | `H3WEBUI_HOST` | `127.0.0.1` | WebUI listen host |
-| `H3WEBUI_PORT` | `8080` | WebUI listen port |
+| `H3WEBUI_PORT` | `8080` | WebUI listen port; `run_webui.bat` starts here and shifts to the next bindable port if needed |
 | `H3_COMFY_ROOT` | `D:\ComfyUI` | ComfyUI root (used only by `run_webui.bat`) |
+| `H3_NO_BROWSER` | unset | (`run_webui.bat` only) when set to `1`, do not open a browser — just print the URL |
 
 ---
 
@@ -224,12 +227,14 @@ All under the `/api` prefix, JSON:
 │   └── workspaces/          # runtime-generated, not committed (.gitignore)
 │       └── <workspace>/generations.json + media/
 └── scripts/
+    ├── pick_port.ps1        # Windows: pick a bindable WebUI port for run_webui.bat
     ├── h3_i2v_smoke.py      # smoke test: i2v (direct ComfyUI API end-to-end, optional)
     ├── h3_r2v_smoke.py      # smoke test: r2v multi-image reference core chain (--input-dir can auto-generate test images)
     ├── p2_audio_smoke.py    # smoke test: r2v audio refs (upload/validation/generation incl. negative cases)
-    ├── p3_video_ref_smoke.py # smoke test: r2v video refs (graph wiring / upload & generation boundaries)
     ├── e2e_r2v_test.py      # end-to-end test: full r2v generation
-    └── sse_progress_check.py # SSE progress check script
+    ├── sse_progress_check.py  # SSE progress check script
+    ├── sse_latch_selftest.py  # SSE finalize/latch self-test
+    └── i18n_coverage_check.js # frontend i18n coverage check (zh/en key alignment)
 ```
 
 > No frontend build step — `index.html` is everything; edit and refresh.
@@ -246,6 +251,9 @@ The backend disables caching for the homepage; press **Ctrl+Shift+R** to hard-re
 
 **Q: "ComfyUI rejected"?**
 Usually a model file is missing from the matching `ComfyUI/models/` directory (the error includes node-level hints), or a node parameter is invalid.
+
+**Q: Starting the WebUI fails with `winerror 10013` (cannot listen on 8080)?**
+Port 8080 is inside a Windows “excluded port range” (Hyper-V / WSL / winnat); `netstat` shows nothing listening, which makes it look like a permission problem. `run_webui.bat` probes with a real bind and shifts to the next free port; for a manual start use `set H3WEBUI_PORT=8081`. Inspect the reservations with: `netsh interface ipv4 show excludedportrange protocol=tcp`.
 
 **Q: Why isn't the resolution exactly my custom value?**
 H3 requires width/height to be 32-multiples with area ≤ 1920×1088; the backend auto-crops/scales per mode (native mode has an extra scale slider).

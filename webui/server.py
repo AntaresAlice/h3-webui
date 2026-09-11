@@ -1243,4 +1243,20 @@ if __name__ == "__main__":
     print(f"  工作区目录: {WORKSPACES_DIR}")
     print(f"  监听: http://{HOST}:{PORT}")
     print("=" * 60)
-    web.run_app(make_app(), host=HOST, port=PORT)
+    try:
+        web.run_app(make_app(), host=HOST, port=PORT)
+    except OSError as e:
+        # 端口绑定失败: 给出可操作提示, 而不是抛一大段 traceback
+        errno_ = getattr(e, "errno", None)
+        winerr = getattr(e, "winerror", None)
+        if winerr in (10013, 10048, 10049) or errno_ in (13, 48, 98, 99, 10048):
+            print()
+            print(f"[错误] 无法监听 {HOST}:{PORT} —— 端口被占用或被系统保留。")
+            if winerr == 10013 or errno_ == 13:
+                print("  Windows 下常见原因: 该端口落在 Hyper-V/WSL/winnat 预留的“排除端口段”内。")
+                print("  查看: netsh interface ipv4 show excludedportrange protocol=tcp")
+            print("  解决: 换一个端口重试, 例如 (Windows)  set H3WEBUI_PORT=8081")
+            print("                                (Linux)    H3WEBUI_PORT=8081 ./run_webui.sh")
+            print("        或直接运行 run_webui.bat —— 它会自动挑选可用端口。")
+            raise SystemExit(1)
+        raise
